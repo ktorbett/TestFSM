@@ -10,8 +10,11 @@ namespace TestFSM.ObjectModel {
 
         public ACTOR(string actorName, FSM_STT stt) {
             this.actorName = actorName;
-            this.fsm = new FSM(this.actorName, stt, this);
+            this.fsm = new SYNCH_FSM(this.actorName, stt, this);
             this.fsm.initialise();
+
+            // TODO want code gen to provide a switch on the type sync/async passed in as a parameter
+            // to the constructor.  Maybe a second constructor for initialising with an event  ?
         }
 
         public STT_State getCurrentState() {

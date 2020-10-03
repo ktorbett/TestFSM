@@ -1,16 +1,24 @@
 ﻿namespace TestFSM.FiniteStateMachine {
+    using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using System.Transactions;
 
     /// <summary>
     /// The main Finite State Machine Class....
-    /// instances of this class represent a 'running' FSM
+    /// instances of the FSM class family represent a 'running' FSM
     /// which consumes events and changes its state over time.
-    /// A business class instance can delegate its state behaviour
-    /// to an instance of FSM.
-    /// Each instance of FSM will be 'bound' to an instance
-    /// of a business/operational class of the application
-    /// like ACTOR, CDPLAYER, PARTICLE etc ( and vice-versa ).
+    /// NOTE:  this is an abstract class so we never get instances of FSM, 
+    /// only ASYNCH_FSM and SYNCH_FSM.
+    /// 
+    /// A business class instance can delegate its state behaviour to an FSM.
+    /// Each FSM will be 'bound' by its 'registeredInstance' attribute to an instance
+    /// of a business/operational class of the application like ACTOR, CDPLAYER, 
+    /// PARTICLE etc ( and vice-versa ).
+    /// 
     /// To do so the STT that an FSM traverses must have the
     /// same refClassName as the business class it is for and we should set
     /// the fsmName to include the refClassName of the
@@ -43,7 +51,8 @@
     /// to the naming convention - similar to many other frameworks like windows forms, 
     /// Hibernate or Android intents.
     /// </summary>
-    public class FSM {
+    public abstract class FSM {
+
         /// <summary>
         /// The current state of this FSM
         /// </summary>
@@ -72,7 +81,7 @@
         internal object registeredInstance;// the instance of the business class this FSM is for
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="FSM"/> class.
+        /// Creates a new instance of the <see cref="FSM"/> class.
         /// </summary>
         /// <param name="newId">.</param>
         /// <param name="fsmSTT">.</param>
@@ -88,14 +97,15 @@
                     throw new System.ArgumentException("FSM constructor - Duplicate refClassName - not added");
                 }
             } else {
-                throw new System.ArgumentException("ERROR in FSM constructor: Registering instance and FSM_STT refClassName do not refer to the same class");
+                throw new System.ArgumentException("ERROR in FSM constructor: Registering instance and FSM_STT " +
+                                                    "refClassName do not refer to the same class");
             }
         }
 
         /// <summary>
         /// The instanceList accessor.
         /// </summary>
-        /// <returns>The <see cref="Dictionary{String, FSM}"/>.</returns>
+        /// <returns>The list of FSMs as a <see cref="Dictionary{String, FSM}"/>.</returns>
         public static Dictionary<string, FSM> getInstanceList() {
             return FSM.instanceList;
         }
@@ -122,6 +132,7 @@
             } else {
                 Debug.WriteLine("FSM:findByFSMName() Can't find FSM named " + fsmName);
             }
+
             return retVal;
         }
 
@@ -134,7 +145,7 @@
         public static FSM findByRegisteredInstance(object myOMInstance) {
             FSM retVal = null;
             foreach(FSM fsm in FSM.instanceList.Values) {
-                if(fsm.registeredInstance.Equals(myOMInstance)) {
+                if( fsm.registeredInstance.Equals(myOMInstance)) {
                     retVal = fsm;
                     break;
                 }
@@ -143,6 +154,7 @@
             if(retVal == null) {
                 Debug.WriteLine("FSM:findByInstance() Can't find FSM with registered instance " + myOMInstance.ToString() + "\n");
             }
+
             return retVal;
         }
 
@@ -159,73 +171,11 @@
         }
 
         /// <summary>
-        /// Needs to be called once an FSM has been created to set its current state
-        /// and run its onEntry() method for its initial state.  This version takes an event and thus
-        /// information can be passed to an initialising FSM in the event's data bundle for use in the 
-        /// State__onEntry() method.
-        /// </summary>
-        /// <param name="evt">.</param>
-        public void initialiseWithEvent(FSM_Event evt) //  can send initial conditions in the event Bundle
-        {
-            if(this.stt != null) {
-                this.currentState = this.stt.getInitialState();
-
-                if(this.currentState.methodForOnEntry == null) {
-                    this.currentState.onEntry(evt);
-                } else {
-                    STT_State.execInstMethodWithEvent(this.currentState.methodForOnEntry, evt);
-                }
-            } else {
-                Debug.WriteLine("FSM.initialiseSynch() Fail: no State Transition Table\n");
-            }
-        }
-
-        /// <summary>
-        /// Needs to be called once an FSM has been created to set its current state
-        /// and run its onEntry() method for its initial state.
-        /// </summary>
-        public void initialise() {
-            if(this.stt != null) {
-                this.currentState = this.stt.getInitialState();
-
-                FSM_Event evt = new FSM_Event(this, "start", this); // Allows for an FSM to 'initialise itself
-                                                                    // by putting code into its initial state's onEntry() method.
-
-                if(this.currentState.methodForOnEntry == null) {
-                    this.currentState.onEntry(evt);
-                } else {
-                    STT_State.execInstMethodWithEvent(this.currentState.methodForOnEntry, evt);
-                }
-            } else {
-                Debug.Write("FSM.initialiseSynch() Fail: no State Transition Table\n");
-            }
-        }
-
-        /// <summary>
         /// Gets the current state of the FSM.
         /// </summary>
         /// <returns>The <see cref="STT_State"/>.</returns>
         public STT_State getCurrentState() {
             return this.currentState;
-        }
-
-        /// <summary>
-        /// Processes an event sent to the FSM.  As a by-product calls the appropriate methods
-        /// for onEntry(), onExit(), transition() and transitionGuard() in
-        /// the Object Model class to which this FSM is bound, if they exist.
-        /// </summary>
-        /// <param name="evt">.</param>
-        /// <returns>an STT_State representing the new state.</returns>
-        public STT_State takeEvent(FSM_Event evt) {
-
-            STT_State retVal;
-            if(evt.checkEvent()) {
-                retVal = this.currentState.takeEvent(evt);
-            } else {
-                retVal = this.currentState;
-            }
-            this.currentState = retVal;
-            return retVal;
         }
 
         /// <summary>
@@ -251,6 +201,139 @@
         /// <returns>The <see cref="object"/>.</returns>
         public object getRegisteredInstance() {
             return this.registeredInstance;
+        }
+
+        public abstract void initialiseWithEvent(FSM_Event evt);
+        public abstract void initialise();
+        public abstract STT_State takeEvent(FSM_Event evt);
+
+    }
+
+    public class SYNCH_FSM : FSM {
+
+        public SYNCH_FSM(string newId, FSM_STT fsmSTT, object registeringInstance)
+            : base(newId, fsmSTT, registeringInstance) {
+
+            // Is there anything else I need to do ?       
+        }
+
+        /// <summary>
+        /// Needs to be called once a SYNCH_FSM has been created to set its current state
+        /// and run its onEntry() method for its initial state.  This version takes an event and thus
+        /// information can be passed to an initialising SYNCH_FSM in the event's data bundle for use
+        /// in the State__onEntry() method.
+        /// </summary>
+        /// <param name="evt">.</param>
+        public override void initialiseWithEvent(FSM_Event evt) //  can send initial conditions in the event Bundle
+        {
+            if(this.stt != null) {
+                this.currentState = this.stt.getInitialState();
+
+                if(this.currentState.methodForOnEntry == null) {
+                    this.currentState.onEntry(evt);
+                } else {
+                    STT_State.execInstMethodWithEvent(this.currentState.methodForOnEntry, evt);
+                }
+            } else {
+                Debug.WriteLine("SYNCH_FSM.initialiseWithEvent() Fail: no State Transition Table\n");
+            }
+        }
+
+        /// <summary>
+        /// Needs to be called once an FSM has been created to set its current state
+        /// and run its onEntry() method for its initial state.
+        /// </summary>
+        public override void initialise() {
+            if(this.stt != null) {
+                this.currentState = this.stt.getInitialState();
+
+                FSM_Event evt = new FSM_Event(this, "start", this); // Allows for an FSM to 'initialise itself
+                                                                    // by putting code into its initial state's onEntry() method.
+
+                if(this.currentState.methodForOnEntry == null) {
+                    this.currentState.onEntry(evt);
+                } else {
+                    STT_State.execInstMethodWithEvent(this.currentState.methodForOnEntry, evt);
+                }
+            } else {
+                Debug.WriteLine("SYNCH_FSM.initialise() Fail: no STT for FSM " + this.fsmName);
+            }
+        }
+
+
+        /// <summary>
+        /// Processes an event sent to the FSM.  As a by-product calls the appropriate methods
+        /// for onEntry(), onExit(), transition() and transitionGuard() in
+        /// the Object Model class to which this FSM is bound, if they exist.
+        /// </summary>
+        /// <param name="evt">.</param>
+        /// <returns>an STT_State representing the new state.</returns>
+        public override STT_State takeEvent(FSM_Event evt) {
+
+            STT_State retVal;
+            if(evt.checkEvent()) {
+                retVal = this.currentState.takeEvent(evt);
+            } else {
+                retVal = this.currentState;
+            }
+            this.currentState = retVal;
+            return retVal;
+        }
+
+    }
+
+    public class ASYNCH_FSM : FSM {
+
+        private ConcurrentQueue<FSM_Event> eventQ = new ConcurrentQueue<FSM_Event>();
+        private Task fsmTask;
+         
+
+        public ASYNCH_FSM(string newId, FSM_STT fsmSTT, object registeringInstance)
+            : base(newId, fsmSTT, registeringInstance) {
+
+            this.eventQ.Enqueue(new FSM_Event(null, null, null));
+        }
+
+        public override void initialise() {
+
+            if( this.stt != null) {
+                this.currentState = this.stt.getInitialState();
+
+                FSM_Event evt = new FSM_Event(this, "start", this); // do we need this ?
+
+                if( this.currentState.methodForOnEntry == null) {
+                    this.currentState.onEntry(evt);
+                } else {
+                    STT_State.execInstMethodWithEvent(this.currentState.methodForOnEntry, evt);
+                }
+                this.startQMonitorTask();
+            } else {
+                Debug.WriteLine("ASYNCH_FSM.initialise() Fail: no STT for FSM " + this.fsmName);
+            }
+        }
+
+        private void startQMonitorTask() {
+            throw new NotImplementedException();
+        }
+
+        public override void initialiseWithEvent( FSM_Event evt) {
+
+            if( this.stt != null) {
+                this.currentState = this.stt.getInitialState();
+
+                if(this.currentState.methodForOnEntry == null) {
+                    this.currentState.onEntry(evt);
+                } else {
+                    STT_State.execInstMethodWithEvent(this.currentState.methodForOnEntry, evt);
+                }
+                this.startQMonitorTask();
+            } else {
+                Debug.WriteLine("ASYNCH_FSM.initialiseWithEvent() Fail: no STT for FSM " + this.fsmName);
+            }
+        }
+
+        public override STT_State takeEvent(FSM_Event evt) {
+            throw new System.NotImplementedException();
         }
     }
 }
