@@ -3,8 +3,8 @@ using TestFSM.FiniteStateMachine;
 
 namespace TestFSM.ObjectModel {
     internal class CDPLAYER {
-        private FSM fsm;
-        private string instanceName;
+        private readonly FSM fsm;
+        private readonly string instanceName;
 
         public CDPLAYER(string newName, FSM_STT stt) {
             this.instanceName = newName;

@@ -10,7 +10,7 @@ namespace TestFSM.ObjectModel {
 
         public ACTOR(string actorName, FSM_STT stt) {
             this.actorName = actorName;
-            this.fsm = new SYNCH_FSM(this.actorName, stt, this);
+            this.fsm = new ASYNCH_FSM(this.actorName, stt, this);
             this.fsm.initialise();
 
             // TODO want code gen to provide a switch on the type sync/async passed in as a parameter
@@ -74,7 +74,17 @@ namespace TestFSM.ObjectModel {
         // Method for Entry 
 
         public void OnStage__onEntry(FSM_Event evt) {
+
             Debug.WriteLine("ACTOR.OnStage__onEntry() Executing in response to event " + evt.getEventName());
+            // Find the CDPlayer:player1.  If its playing send 'play'
+            FSM playerFSM = FSM.findByFSMName("CDPLAYER:cdplayer1");
+            if(playerFSM.getCurrentState().getStateName() != "Playing") {
+                // send it an event.
+                //
+
+                FSM_Event newEvent = new FSM_Event(this, "startPlaying", playerFSM);
+                playerFSM.takeEvent(newEvent);
+            }
         }
 
         // Method for Exit 

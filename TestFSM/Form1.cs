@@ -59,6 +59,7 @@ namespace TestFSM {
             Debug.WriteLine("FSMSTT create complete " + mySTTACTOR.getRefClassName());
 
             this.initialiseSTTsListBox(); // list of STTs loaded in memory
+
         }
 
         private void initialiseEventComboBox(FSM_STT mySTT) {
@@ -78,6 +79,7 @@ namespace TestFSM {
                 this.listBox2.Items.Add(item.refClassName);
             }
         }
+
 
         private void listOfSTTsListBox_SelectedIndexChanged(object sender, EventArgs e) {
             try {
@@ -126,7 +128,17 @@ namespace TestFSM {
             string eventName = this.eventListComboBox.SelectedItem.ToString();
             string targetFSMName = this.listOfInstancesListBox.SelectedItem.ToString();
             FSM targetFSM = FSM.findByFSMName(targetFSMName);
-            FSM.createAndSendEvent("UI", eventName, targetFSM);
+            if(targetFSM is ASYNCH_FSM aFSM) {
+                aFSM.setCallBackUIDelegate(this.updateStateTextBox);
+                FSM.createAndSendEvent(this, eventName, targetFSM);
+            } else {
+                FSM.createAndSendEvent(this, eventName, targetFSM);
+                this.updateStateTextBox(targetFSM);
+            }
+        }
+
+        public void updateStateTextBox(FSM targetFSM) {
+
             this.selectedInstanceStateTextBox.Text = targetFSM.getCurrentState().getStateName();
         }
 

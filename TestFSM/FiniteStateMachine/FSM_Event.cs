@@ -50,7 +50,7 @@
         /// <param name="eventName">The eventName<see cref="string"/>.</param>
         /// <param name="destFSM">The destFSM<see cref="FSM"/>.</param>
         /// <param name="eventDataBundle">The eventDataBundle<see cref="Dictionary{String, object}"/>.</param>
-        public FSM_Event(object source, string eventName, 
+        public FSM_Event(object source, string eventName,
                         FSM destFSM, Dictionary<string, object> eventDataBundle) {
             this.source = source;
             this.eventName = eventName;

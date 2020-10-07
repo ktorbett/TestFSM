@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace TestFSM.FiniteStateMachine {
     /// <summary>
@@ -127,7 +128,11 @@ namespace TestFSM.FiniteStateMachine {
             this.refClassName = refClassName;
             this.nameSpace = nameSpace;
             this.OMClass = Type.GetType(this.refClassName);
-            FSM_STT.instanceList.Add(refClassName, this);
+            try {
+                FSM_STT.instanceList.Add(refClassName, this);
+            } catch(Exception ex) {
+                Debug.WriteLine("FSM_STT.new() " + ex.Message);
+            }
         }
 
         // Accessors

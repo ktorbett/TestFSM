@@ -1,11 +1,9 @@
 ﻿namespace TestFSM.FiniteStateMachine {
-    using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Threading;
     using System.Threading.Tasks;
-    using System.Transactions;
+    using System.Windows.Forms;
 
     /// <summary>
     /// The main Finite State Machine Class....
@@ -145,7 +143,7 @@
         public static FSM findByRegisteredInstance(object myOMInstance) {
             FSM retVal = null;
             foreach(FSM fsm in FSM.instanceList.Values) {
-                if( fsm.registeredInstance.Equals(myOMInstance)) {
+                if(fsm.registeredInstance.Equals(myOMInstance)) {
                     retVal = fsm;
                     break;
                 }
@@ -247,8 +245,7 @@
             if(this.stt != null) {
                 this.currentState = this.stt.getInitialState();
 
-                FSM_Event evt = new FSM_Event(this, "start", this); // Allows for an FSM to 'initialise itself
-                                                                    // by putting code into its initial state's onEntry() method.
+                FSM_Event evt = new FSM_Event(this, "start", this); // just so the event isn't null
 
                 if(this.currentState.methodForOnEntry == null) {
                     this.currentState.onEntry(evt);
@@ -282,43 +279,98 @@
 
     }
 
+
+    public delegate void UICallbackDelegate(FSM fsm);
     public class ASYNCH_FSM : FSM {
 
-        private ConcurrentQueue<FSM_Event> eventQ = new ConcurrentQueue<FSM_Event>();
-        private Task fsmTask;
-         
+
+        private readonly ConcurrentQueue<FSM_Event> eventQ = new ConcurrentQueue<FSM_Event>();
+        //private Task fsmTask;
+        private UICallbackDelegate cbDel;
+        private bool stopped;
 
         public ASYNCH_FSM(string newId, FSM_STT fsmSTT, object registeringInstance)
             : base(newId, fsmSTT, registeringInstance) {
 
-            this.eventQ.Enqueue(new FSM_Event(null, null, null));
         }
 
+        public void setCallBackUIDelegate(UICallbackDelegate cbDel) {
+            this.cbDel = cbDel;
+        }
         public override void initialise() {
 
-            if( this.stt != null) {
+            if(this.stt != null) {
                 this.currentState = this.stt.getInitialState();
+                FSM_Event evt = new FSM_Event(null, "start", this);  // just so it's not null
+                                                                     // Could be used to send initial data for action in the initial state's
+                                                                     // State__onEntry() method but probably better to do init in that ...
 
-                FSM_Event evt = new FSM_Event(this, "start", this); // do we need this ?
-
-                if( this.currentState.methodForOnEntry == null) {
+                if(this.currentState.methodForOnEntry == null) {
                     this.currentState.onEntry(evt);
                 } else {
                     STT_State.execInstMethodWithEvent(this.currentState.methodForOnEntry, evt);
                 }
-                this.startQMonitorTask();
+
+                // This is interntionally fire and forget ...  
+                Task t = Task.Run(() => this.processEvents());
+                
+                Debug.WriteLine("ASYNCH_FSM.initialise() processEvents() task " + t.Id + " spawned for FSM " + this.fsmName);
+            
             } else {
                 Debug.WriteLine("ASYNCH_FSM.initialise() Fail: no STT for FSM " + this.fsmName);
             }
         }
 
-        private void startQMonitorTask() {
-            throw new NotImplementedException();
+
+        private void processEvents() {
+
+            while(!this.stopped) {
+                if(!this.eventQ.IsEmpty) {
+
+                    if(this.eventQ.TryDequeue(out FSM_Event nextEvent)) { // just in case ...
+
+                        // we could make this a task too ???
+                        this.currentState = this.currentState.takeEvent(nextEvent);
+
+                        // IF the event we have just processed was received from a 
+                        // UI component ( a Control ) then call the method that has
+                        // been registered as our UICallbackDelegate ( if one has been set )
+                        // passing back this instance.  From that reference the UI should be
+                        // able to find all the info it needs ...
+
+                        if(nextEvent.getSource() is Control sourceControl && this.cbDel != null) {
+                            object[] myArray = new object[1];
+                            myArray[0] = this;
+                            sourceControl.BeginInvoke(this.cbDel, myArray);
+                        }
+                    }
+                }
+            }
         }
 
-        public override void initialiseWithEvent( FSM_Event evt) {
+        // TODO we need a way to stop the FSM asynchronously, so some sort of callback function ?
+        // TODO this should probably be on a worker thread
 
-            if( this.stt != null) {
+        public void stopProcessingEvents() {
+            this.stopped = true;
+        }
+
+        public override STT_State takeEvent(FSM_Event evt) {
+
+            // TODO shoud we check thsat its for thsi FSM ??
+
+            if(evt.checkEvent()) {
+                this.eventQ.Enqueue(evt);
+            } else {
+                Debug.WriteLine("FSM.takeEvent() Failure: illegal event name or null target FSM");
+            }
+            return null;
+        }
+
+
+        public override void initialiseWithEvent(FSM_Event evt) {
+
+            if(this.stt != null) {
                 this.currentState = this.stt.getInitialState();
 
                 if(this.currentState.methodForOnEntry == null) {
@@ -326,14 +378,11 @@
                 } else {
                     STT_State.execInstMethodWithEvent(this.currentState.methodForOnEntry, evt);
                 }
-                this.startQMonitorTask();
+                this.processEvents();
             } else {
                 Debug.WriteLine("ASYNCH_FSM.initialiseWithEvent() Fail: no STT for FSM " + this.fsmName);
             }
         }
 
-        public override STT_State takeEvent(FSM_Event evt) {
-            throw new System.NotImplementedException();
-        }
     }
 }
