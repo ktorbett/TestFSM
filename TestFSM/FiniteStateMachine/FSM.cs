@@ -2,8 +2,12 @@
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Runtime.InteropServices.ComTypes;
+    using System.Runtime.InteropServices.WindowsRuntime;
     using System.Threading.Tasks;
+    using System.Transactions;
     using System.Windows.Forms;
+    using System.Windows.Forms.VisualStyles;
 
     /// <summary>
     /// The main Finite State Machine Class....
@@ -62,7 +66,7 @@
         internal FSM_STT stt;
 
         /// <summary>
-        /// Shouls be of the form refClassName:objName of the business class instance that needs FSM abilities
+        /// Should be of the form refClassName:objName of the business class instance that needs FSM abilities
         /// i.e If we have an ACTOR with a name attribute set to "actor1" the FSM will be named "ACTOR:actor1".
         /// </summary>
         internal string fsmName;
@@ -84,6 +88,27 @@
         /// <param name="newId">.</param>
         /// <param name="fsmSTT">.</param>
         /// <param name="registeringInstance">.</param>
+
+        public static void postEvent(object source, string eventName, FSM target) {
+
+            FSM_Event evt = new FSM_Event(source, eventName, target);
+            FSM.postEvent(evt);
+
+        }
+        
+        /// <summary>
+        /// Use this to send an event to the FSM instance specified in the 
+        /// evt structure's 'destFSM' attribute.
+        /// </summary>
+        /// <param name="evt"></param>
+        public static void postEvent(FSM_Event evt) {
+
+            FSM target = evt.getDestFSM();
+            target.takeEvent(evt);           
+        }
+
+        public abstract void takeEvent( FSM_Event evt); 
+        
         public FSM(string newId, FSM_STT fsmSTT, object registeringInstance) {
             string riClassName = registeringInstance.GetType().Name;
             if(riClassName == fsmSTT.refClassName) {
@@ -92,7 +117,7 @@
                 this.registeredInstance = registeringInstance;
 
                 if(!FSM.instanceList.TryAdd(this.fsmName, this)) {
-                    throw new System.ArgumentException("FSM constructor - Duplicate refClassName - not added");
+                    throw new System.ArgumentException("WARNING in FSM constructor - Duplicate refClassName - not added");
                 }
             } else {
                 throw new System.ArgumentException("ERROR in FSM constructor: Registering instance and FSM_STT " +
@@ -157,15 +182,15 @@
         }
 
         /// <summary>
-        /// Sends an event.  Source is an Object rather than an FSM so that anything can send an event - it
-        /// doesn't have to come from another instance of FSM.
+        /// Sends an event.  Source is an Object rather than an FSM so that anything can send an event - 
+        /// for example a UI control.  It doesn't have to come from another instance of FSM.
         /// </summary>
         /// <param name="source">.</param>
         /// <param name="eventName">.</param>
         /// <param name="toFSM">.</param>
         public static void createAndSendEvent(object source, string eventName, FSM toFSM) {
             FSM_Event newEvent = new FSM_Event(source, eventName, toFSM);
-            toFSM.takeEvent(newEvent);
+            FSM.postEvent(newEvent);
         }
 
         /// <summary>
@@ -201,9 +226,39 @@
             return this.registeredInstance;
         }
 
-        public abstract void initialiseWithEvent(FSM_Event evt);
+        /// <summary>
+        /// Needs to be called once a SYNCH_FSM has been created to set its current state
+        /// and run its onEntry() method for its initial state.  This version takes an event and thus
+        /// information can be passed to an initialising SYNCH_FSM in the event's data bundle for use
+        /// in the State__onEntry() method.
+        /// </summary>
+        /// <param name="evt">.</param>
+        public void setInitialState(FSM_Event evt) //  can send initial conditions in the event Bundle
+        {
+            if(this.stt != null) {
+                this.currentState = this.stt.getInitialState();
+
+                if(this.currentState.methodForOnEntry == null) {
+                    this.currentState.onEntry(evt);
+                } else {
+                    STT_State.execInstMethodWithEvent(this.currentState.methodForOnEntry, evt);
+                }
+            } else {
+                Debug.WriteLine("FSM.initialise( evt) Fail: no State Transition Table\n");
+            }
+        }
+
+        /// <summary>
+        /// Needs to be called once an FSM has been created to set its current state
+        /// and run its onEntry() method for its initial state.
+        /// </summary>
+        public void setInitialState() {
+            FSM_Event evt = new FSM_Event(this, "FSMstart", this); // just so the event isn't null
+            setInitialState(evt);
+        }
+
         public abstract void initialise();
-        public abstract STT_State takeEvent(FSM_Event evt);
+        public abstract void initialise( FSM_Event evt);
 
     }
 
@@ -216,82 +271,58 @@
         }
 
         /// <summary>
-        /// Needs to be called once a SYNCH_FSM has been created to set its current state
-        /// and run its onEntry() method for its initial state.  This version takes an event and thus
-        /// information can be passed to an initialising SYNCH_FSM in the event's data bundle for use
-        /// in the State__onEntry() method.
-        /// </summary>
-        /// <param name="evt">.</param>
-        public override void initialiseWithEvent(FSM_Event evt) //  can send initial conditions in the event Bundle
-        {
-            if(this.stt != null) {
-                this.currentState = this.stt.getInitialState();
-
-                if(this.currentState.methodForOnEntry == null) {
-                    this.currentState.onEntry(evt);
-                } else {
-                    STT_State.execInstMethodWithEvent(this.currentState.methodForOnEntry, evt);
-                }
-            } else {
-                Debug.WriteLine("SYNCH_FSM.initialiseWithEvent() Fail: no State Transition Table\n");
-            }
-        }
-
-        /// <summary>
-        /// Needs to be called once an FSM has been created to set its current state
-        /// and run its onEntry() method for its initial state.
-        /// </summary>
-        public override void initialise() {
-            if(this.stt != null) {
-                this.currentState = this.stt.getInitialState();
-
-                FSM_Event evt = new FSM_Event(this, "start", this); // just so the event isn't null
-
-                if(this.currentState.methodForOnEntry == null) {
-                    this.currentState.onEntry(evt);
-                } else {
-                    STT_State.execInstMethodWithEvent(this.currentState.methodForOnEntry, evt);
-                }
-            } else {
-                Debug.WriteLine("SYNCH_FSM.initialise() Fail: no STT for FSM " + this.fsmName);
-            }
-        }
-
-
-        /// <summary>
         /// Processes an event sent to the FSM.  As a by-product calls the appropriate methods
         /// for onEntry(), onExit(), transition() and transitionGuard() in
         /// the Object Model class to which this FSM is bound, if they exist.
         /// </summary>
         /// <param name="evt">.</param>
         /// <returns>an STT_State representing the new state.</returns>
-        public override STT_State takeEvent(FSM_Event evt) {
+        public override void takeEvent(FSM_Event evt) {
 
-            STT_State retVal;
-            if(evt.checkEvent()) {
-                retVal = this.currentState.takeEvent(evt);
-            } else {
-                retVal = this.currentState;
-            }
-            this.currentState = retVal;
-            return retVal;
+            if( evt.checkEvent( this)) {
+                this. currentState = this.currentState.takeEvent(evt);
+            } 
+                    
+        }
+
+        public override void initialise() {
+            
+            this.setInitialState();
+        }
+
+        public override void initialise(FSM_Event evt) {
+            
+            this.setInitialState(evt);
         }
 
     }
 
-
+   
     public delegate void UICallbackDelegate(FSM fsm);
     public class ASYNCH_FSM : FSM {
 
-
-        private readonly ConcurrentQueue<FSM_Event> eventQ = new ConcurrentQueue<FSM_Event>();
-        //private Task fsmTask;
+        private readonly ConcurrentQueue<FSM_Event> eventQ;
+        private Task fsmTask;
         private UICallbackDelegate cbDel;
         private bool stopped;
 
         public ASYNCH_FSM(string newId, FSM_STT fsmSTT, object registeringInstance)
             : base(newId, fsmSTT, registeringInstance) {
+            // is there anything else we need to do ?
+            // examine the STT taskModel attribute and copy the queue if we need it ?
+            // this ensures that posting an event posts it to the right queue
+            if ( this.stt.taskModel == taskAllocation.taskPerClass) {
 
+                // thisQ in fact should point to the one in the STT
+                // as its shared among all instances of ASYNCH_FSM for that 
+                // business class.  same for the task
+
+                // TODO - this is ugly and needs to be refactored properly
+                this.eventQ = this.stt.eventQ;
+                this.fsmTask = this.stt.classTask;
+            } else {
+                this.eventQ = new ConcurrentQueue<FSM_Event>();
+            }
         }
 
         public void setCallBackUIDelegate(UICallbackDelegate cbDel) {
@@ -299,52 +330,98 @@
         }
         public override void initialise() {
 
-            if(this.stt != null) {
-                this.currentState = this.stt.getInitialState();
-                FSM_Event evt = new FSM_Event(null, "start", this);  // just so it's not null
-                                                                     // Could be used to send initial data for action in the initial state's
-                                                                     // State__onEntry() method but probably better to do init in that ...
+            this.setInitialState();
 
-                if(this.currentState.methodForOnEntry == null) {
-                    this.currentState.onEntry(evt);
+            // check which task and Queue we should be starting.
+            // check do we need to start a task ? 
+            // TODO tidy this up -  tests in wrong order ???
+            this.startTask();
+        }
+
+        private void startTask() {
+            if(this.stt.taskModel == taskAllocation.taskPerInstance) {
+                if(!isTaskRunning(this.fsmTask)) { // just a check in case init has been called by mistake
+                    this.fsmTask = Task.Run(() => this.processEvents(this.eventQ));
+                    Debug.WriteLine("ASYNCH_FSM.initialise() processEvents() task " + this.fsmTask.Id +
+                                                " spawned for FSM " + this.fsmName);
                 } else {
-                    STT_State.execInstMethodWithEvent(this.currentState.methodForOnEntry, evt);
+                    Debug.WriteLine("ASYNCH_FSM.initialise() - ignoring request.  The processEvents() task " +
+                        this.fsmTask.Id + " is already running - called in error?");
                 }
-
-                // This is interntionally fire and forget ...  
-                Task t = Task.Run(() => this.processEvents());
-                
-                Debug.WriteLine("ASYNCH_FSM.initialise() processEvents() task " + t.Id + " spawned for FSM " + this.fsmName);
-            
             } else {
-                Debug.WriteLine("ASYNCH_FSM.initialise() Fail: no STT for FSM " + this.fsmName);
+                if(!isTaskRunning(this.stt.classTask)) {
+                    this.stt.classTask = Task.Run(() => this.processEvents(this.stt.eventQ));
+                    this.fsmTask = this.stt.classTask; // do we need this ?
+                    Debug.WriteLine("ASYNCH_FSM.initialise() processEvents() task " + this.fsmTask.Id +
+                                            " spawned for class " + this.stt.refClassName);
+                } else {
+                    Debug.WriteLine("ASYNCH_FSM.initialise() processEvents() task " + this.fsmTask.Id +
+                        "for class " + this.stt.refClassName + " - adding FSM " + this.fsmName);
+                }
             }
         }
 
+        private static bool isTaskRunning(Task task) {
+            bool retVal = true;
+            // first check if its null ..
+            if( task == null) { // then we're OK to start.
+       
+                retVal = false;
+            } else {
+                if( task.Status == TaskStatus.Canceled ||
+                    task.Status == TaskStatus.Faulted ||
+                    task.Status == TaskStatus.RanToCompletion) { //  maybe its a restart  ?
+                
+                    retVal = false;
+                } 
 
-        private void processEvents() {
+            }
+            return retVal;
+        }
 
-            while(!this.stopped) {
-                if(!this.eventQ.IsEmpty) {
+        public override void initialise( FSM_Event evt) {
 
-                    if(this.eventQ.TryDequeue(out FSM_Event nextEvent)) { // just in case ...
+            //  need to call setInitialState( evt) in the parent class , then do the queue setup.
+            this.setInitialState( evt);
+            this.startTask();    
+        }
 
-                        // we could make this a task too ???
+
+        private void processEvents( ConcurrentQueue<FSM_Event> evQ) {
+
+            // BlockingCollection looks interesting..as an alternative
+
+            while(!this.stopped) { // should this be a cancellation token ??  probably yes
+                if(!evQ.IsEmpty) {
+
+                    if( evQ.TryDequeue(out FSM_Event nextEvent)) { // just in case ...
+
+                        // we could make this a task too ???   NO - event processing order must be 
+                        // maintained in an FSM - so the FSM itself is the smallest unit of
+                        // processing that may be carried out in parallel - NOT the state actions
                         this.currentState = this.currentState.takeEvent(nextEvent);
-
-                        // IF the event we have just processed was received from a 
-                        // UI component ( a Control ) then call the method that has
-                        // been registered as our UICallbackDelegate ( if one has been set )
-                        // passing back this instance.  From that reference the UI should be
-                        // able to find all the info it needs ...
-
-                        if(nextEvent.getSource() is Control sourceControl && this.cbDel != null) {
-                            object[] myArray = new object[1];
-                            myArray[0] = this;
-                            sourceControl.BeginInvoke(this.cbDel, myArray);
-                        }
+                        // IF the source in nextEvent was a UI component, this call can notify it
+                        this.notifyUIEventComplete(nextEvent);
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// IF the event we have just processed was received from a 
+        /// UI component ( a Control ) then call the method that has
+        /// been registered as our UICallbackDelegate ( if one has been set )
+        /// passing back this instance of FSM and do it on the UI thread. 
+        /// From that reference the UI should be
+        /// able to find all the info it needs ...
+        /// </summary>
+        /// <param name="evt"></param>
+        public void notifyUIEventComplete(FSM_Event evt) {
+            
+            if(evt.getSource() is Control sourceControl && this.cbDel != null) {
+                object[] myArray = new object[1];
+                myArray[0] = this;
+                sourceControl.BeginInvoke(this.cbDel, myArray);
             }
         }
 
@@ -355,34 +432,19 @@
             this.stopped = true;
         }
 
-        public override STT_State takeEvent(FSM_Event evt) {
+        public override void takeEvent(FSM_Event evt) {
 
-            // TODO shoud we check thsat its for thsi FSM ??
-
-            if(evt.checkEvent()) {
-                this.eventQ.Enqueue(evt);
-            } else {
-                Debug.WriteLine("FSM.takeEvent() Failure: illegal event name or null target FSM");
-            }
-            return null;
-        }
-
-
-        public override void initialiseWithEvent(FSM_Event evt) {
-
-            if(this.stt != null) {
-                this.currentState = this.stt.getInitialState();
-
-                if(this.currentState.methodForOnEntry == null) {
-                    this.currentState.onEntry(evt);
+            if(evt.checkEvent(this)) {
+                if ( this.stt.taskModel == taskAllocation.taskPerInstance) {
+                    this.eventQ.Enqueue(evt);
                 } else {
-                    STT_State.execInstMethodWithEvent(this.currentState.methodForOnEntry, evt);
+                    // taskPerClass means we post the  event to the Queue managed
+                    // by the STT
+                    this.stt.eventQ.Enqueue(evt);
                 }
-                this.processEvents();
-            } else {
-                Debug.WriteLine("ASYNCH_FSM.initialiseWithEvent() Fail: no STT for FSM " + this.fsmName);
+                
             }
         }
-
+        
     }
 }

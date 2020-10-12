@@ -44,6 +44,7 @@ namespace TestFSM {
             STT_State endedState = mySTTACTOR.addState("Ended");
             mySTTACTOR.setInitialState(inWingsState);
             mySTTACTOR.setDeleteWhenEndStateReached();
+            mySTTACTOR.setTaskModel(taskAllocation.taskPerClass);
 
             // Transitions
 
@@ -56,7 +57,7 @@ namespace TestFSM {
             bowingState.addTransition("applauseStopped", endedState);
             bowingState.addTransition("applauseStopped", endedState);
 
-            Debug.WriteLine("FSMSTT create complete " + mySTTACTOR.getRefClassName());
+            Debug.WriteLine("Form1 - FSMSTT create complete " + mySTTACTOR.getRefClassName());
 
             this.initialiseSTTsListBox(); // list of STTs loaded in memory
 

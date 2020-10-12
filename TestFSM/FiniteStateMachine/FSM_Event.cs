@@ -1,6 +1,7 @@
 ﻿namespace TestFSM.FiniteStateMachine {
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.IO.Compression;
 
     /// <summary>
     /// FSM_Event models an event in the run-time of your application, that can be sent
@@ -64,13 +65,13 @@
         /// TODO should we check the source isn't null too ?
         /// </summary>
         /// <returns>true if all OK<see cref="bool"/>.</returns>
-        public bool checkEvent() {
+        public bool checkEvent( FSM fsm) {
             bool retVal = true;
 
-            if(this.destFSM == null) {
+            if(this.destFSM == null || this.destFSM != fsm) {
                 retVal = false;
-                Debug.WriteLine("FSM_Event.checkEvent() Can't process event " + this.eventName +
-                    " as destFSM is null");
+                Debug.WriteLine("FSM_Event.checkEvent() " + this.eventName +
+                    " inconsistent - destFSM is null or not the same as the FSM it has been sent to");
             }
 
             if(!this.destFSM.stt.eventsList.Contains(this.eventName)) {

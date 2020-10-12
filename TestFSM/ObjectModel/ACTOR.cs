@@ -12,7 +12,6 @@ namespace TestFSM.ObjectModel {
             this.actorName = actorName;
             this.fsm = new ASYNCH_FSM(this.actorName, stt, this);
             this.fsm.initialise();
-
             // TODO want code gen to provide a switch on the type sync/async passed in as a parameter
             // to the constructor.  Maybe a second constructor for initialising with an event  ?
         }
@@ -83,7 +82,7 @@ namespace TestFSM.ObjectModel {
                 //
 
                 FSM_Event newEvent = new FSM_Event(this, "startPlaying", playerFSM);
-                playerFSM.takeEvent(newEvent);
+                FSM.postEvent(newEvent);
             }
         }
 
