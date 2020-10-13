@@ -2,18 +2,16 @@
 using TestFSM.FiniteStateMachine;
 
 namespace TestFSM.ObjectModel {
-
     public class ACTOR {
 
         protected string actorName;
         protected FSM fsm;
 
-        public ACTOR(string actorName, FSM_STT stt) {
+        public ACTOR(string actorName, FSM_STT stt, FSMType fsmType) {
             this.actorName = actorName;
-            this.fsm = new FSM(this.actorName, stt, this);
+            this.fsm = FSM.createFSM(this.actorName, stt, this, fsmType);
             this.fsm.initialise();
         }
-
         public STT_State getCurrentState() {
             return this.fsm.getCurrentState();
         }
@@ -71,7 +69,17 @@ namespace TestFSM.ObjectModel {
         // Method for Entry 
 
         public void OnStage__onEntry(FSM_Event evt) {
+
             Debug.WriteLine("ACTOR.OnStage__onEntry() Executing in response to event " + evt.getEventName());
+            // Find the CDPlayer:player1.  If its playing send 'play'
+            FSM playerFSM = FSM.findByFSMName("CDPLAYER:cdplayer1");
+            if(playerFSM.getCurrentState().getStateName() != "Playing") {
+                // send it an event.
+                //
+
+                FSM_Event newEvent = new FSM_Event(this, "startPlaying", playerFSM);
+                FSM.postEvent(newEvent);
+            }
         }
 
         // Method for Exit 
@@ -171,6 +179,16 @@ namespace TestFSM.ObjectModel {
         public bool Bowing__applauseStoppedGuard(FSM_Event evt) {
             Debug.WriteLine("ACTOR.Bowing__applauseStoppedGuard() allowing event " + evt.getEventName());
             return true;
+        }
+
+        // Implementation of State Ended
+
+        // Method for Entry 
+
+        public void Ended__onEntry(FSM_Event evt) {
+            Debug.WriteLine("ACTOR.Ended__onEntry() Executing in response to event " + evt.getEventName());
+            // delete references as this is an end state and the STT demands it
+            this.dereferenceFSM();
         }
 
 

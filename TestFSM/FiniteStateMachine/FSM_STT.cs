@@ -1,7 +1,21 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace TestFSM.FiniteStateMachine {
+
+    /// <summary>
+    /// Says how tasks will be allocated for FSMs traversing this State Transition Table.
+    /// Either there is one queue of events for each instance of an FSM ( taskPerInstance )
+    /// each running on its own Task in parallel - OR we have a single queue of events and a 
+    /// single OS Task for all the instances of FSM that use this STT.
+    /// This allows a modicum of control on how many tasks are created.  If you have lots of
+    /// instances of FSM perhaps you might not want to spawn hundreds of Tasks.  
+    /// </summary>
+    public enum taskAllocation { taskPerInstance, taskPerClass };
+
     /// <summary>
     /// FSM_STT is the State Transition Table.  It represents the set of
     /// states, transitions and events that can be drawn in a state machine
@@ -48,6 +62,24 @@ namespace TestFSM.FiniteStateMachine {
         private Type OMClass;
 
         /// <summary>
+        /// By default we create a Task in the OS for each Business Class ( i.e. each instance of STT )
+        /// with all the instances of FSM for that class sharing the same execution thread.
+        /// But we can change this to one Task for every instance of FSM instead.
+        /// </summary>
+        internal taskAllocation taskModel = taskAllocation.taskPerInstance;  //or taskAllocation.classPerInstance
+        internal Task classTask;
+        internal ConcurrentQueue<FSM_Event> eventQ = new ConcurrentQueue<FSM_Event>();
+        public taskAllocation getTaskModel() {
+            return this.taskModel;
+        }
+
+        // do we need a processEvents as well ? 
+
+        public void setTaskModel( taskAllocation alloc) {
+            this.taskModel = alloc;
+        }
+
+        /// <summary>
         /// Holds the starting state for this STT and hence for all FSMs
         /// that are created using this STT.  Set by the setInitialState() method.
         /// </summary>
@@ -64,7 +96,11 @@ namespace TestFSM.FiniteStateMachine {
         /// events that can be processed ) we want to delete the instance of FSM that relates
         /// to the business object.  Default is false - no FSMs are automatically deleted.
         /// </summary>
-        private bool deleteWhenEndStateReached = false;
+        private bool deleteWhenEndStateReached = false;  // TODO - implement a call ...
+
+        internal void postEvent(FSM_Event evt) {
+            throw new NotImplementedException();
+        }
 
         /// <summary>
         /// DERIVED list of the the events that this STT can consume.  In effect
@@ -127,7 +163,11 @@ namespace TestFSM.FiniteStateMachine {
             this.refClassName = refClassName;
             this.nameSpace = nameSpace;
             this.OMClass = Type.GetType(this.refClassName);
-            FSM_STT.instanceList.Add(refClassName, this);
+            try {
+                FSM_STT.instanceList.Add(refClassName, this);
+            } catch(Exception ex) {
+                Debug.WriteLine("FSM_STT.new() " + ex.Message);
+            }
         }
 
         // Accessors

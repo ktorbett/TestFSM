@@ -4,11 +4,11 @@ using TestFSM.FiniteStateMachine;
 namespace TestFSM.ObjectModel {
     internal class CDPLAYER {
         private readonly FSM fsm;
-        private readonly string instanceName;
+        private readonly string cdplayerName;
 
-        public CDPLAYER(string newName, FSM_STT stt) {
-            this.instanceName = newName;
-            this.fsm = new FSM(this.instanceName, stt, this);
+        public CDPLAYER(string cdplayerName, FSM_STT stt, FSMType fsmType) {
+            this.cdplayerName = cdplayerName;
+            this.fsm = FSM.createFSM(this.cdplayerName, stt, this, fsmType);
             this.fsm.initialise();
         }
 

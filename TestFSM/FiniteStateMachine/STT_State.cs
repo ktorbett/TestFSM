@@ -255,10 +255,12 @@
             } else {
                 STT_State.execInstMethodWithEvent(trans.toState.methodForOnEntry, evt);
             }
+            // IF we have final state and the delete flag is set, call the onDelete() method in
+            // the objct model class ??????
         }
 
         /// <summary>
-        /// Sets the reflection variables liek the methodInbfo pointers for thsi State.
+        /// Sets the reflection variables like the methodInfo pointers for this State.
         /// </summary>
         private void setReflectionVariables() {
             if(this.stt.getOMClass() != null) {  // if it ain't there we can't continue
