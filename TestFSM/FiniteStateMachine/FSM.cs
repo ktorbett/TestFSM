@@ -1,4 +1,5 @@
 ﻿namespace TestFSM.FiniteStateMachine {
+    using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -81,6 +82,8 @@
         /// instance of FSM is managing the state.  TODO - Generics.....
         /// </summary>
         internal object registeredInstance;// the instance of the business class this FSM is for
+
+        protected UICallbackDelegate cbDel;
 
         /// <summary>
         /// Creates a new instance of the <see cref="FSM"/> class.
@@ -260,6 +263,24 @@
         public abstract void initialise();
         public abstract void initialise( FSM_Event evt);
 
+
+        /// <summary>
+        /// IF the event we have just processed was received from a 
+        /// UI component ( a Control ) then call the method that has
+        /// been registered as our UICallbackDelegate ( if one has been set )
+        /// passing back this instance of FSM and do it on the UI thread. 
+        /// From that reference the UI should be
+        /// able to find all the info it needs ...
+        /// </summary>
+        /// <param name="evt"></param>
+        internal void notifyUIEventComplete(FSM_Event evt) {
+
+            if(evt.getSource() is Control sourceControl && this.cbDel != null) {
+                object[] myArray = new object[1];
+                myArray[0] = this;
+                sourceControl.BeginInvoke(this.cbDel, myArray);
+            }
+        }
     }
 
     public class SYNCH_FSM : FSM {
@@ -303,7 +324,7 @@
 
         private readonly ConcurrentQueue<FSM_Event> eventQ;
         private Task fsmTask;
-        private UICallbackDelegate cbDel;
+        
         private bool stopped;
 
         public ASYNCH_FSM(string newId, FSM_STT fsmSTT, object registeringInstance)
@@ -341,7 +362,7 @@
         private void startTask() {
             if(this.stt.taskModel == taskAllocation.taskPerInstance) {
                 if(!isTaskRunning(this.fsmTask)) { // just a check in case init has been called by mistake
-                    this.fsmTask = Task.Run(() => this.processEvents(this.eventQ));
+                    this.fsmTask = Task.Run(() => ASYNCH_FSM.processEvents(this.eventQ));
                     Debug.WriteLine("ASYNCH_FSM.initialise() processEvents() task " + this.fsmTask.Id +
                                                 " spawned for FSM " + this.fsmName);
                 } else {
@@ -350,13 +371,13 @@
                 }
             } else {
                 if(!isTaskRunning(this.stt.classTask)) {
-                    this.stt.classTask = Task.Run(() => this.processEvents(this.stt.eventQ));
+                    this.stt.classTask = Task.Run(() => ASYNCH_FSM.processEvents(this.stt.eventQ));
                     this.fsmTask = this.stt.classTask; // do we need this ?
                     Debug.WriteLine("ASYNCH_FSM.initialise() processEvents() task " + this.fsmTask.Id +
                                             " spawned for class " + this.stt.refClassName);
                 } else {
                     Debug.WriteLine("ASYNCH_FSM.initialise() processEvents() task " + this.fsmTask.Id +
-                        "for class " + this.stt.refClassName + " - adding FSM " + this.fsmName);
+                        " for class " + this.stt.refClassName + " - adding FSM " + this.fsmName);
                 }
             }
         }
@@ -387,11 +408,11 @@
         }
 
 
-        private void processEvents( ConcurrentQueue<FSM_Event> evQ) {
+        private static void processEvents( ConcurrentQueue<FSM_Event> evQ) {
 
             // BlockingCollection looks interesting..as an alternative
 
-            while(!this.stopped) { // should this be a cancellation token ??  probably yes
+            while(true) { // should this be a cancellation token ??  probably yes
                 if(!evQ.IsEmpty) {
 
                     if( evQ.TryDequeue(out FSM_Event nextEvent)) { // just in case ...
@@ -399,34 +420,19 @@
                         // we could make this a task too ???   NO - event processing order must be 
                         // maintained in an FSM - so the FSM itself is the smallest unit of
                         // processing that may be carried out in parallel - NOT the state actions
-                        this.currentState = this.currentState.takeEvent(nextEvent);
+
+                        FSM target = nextEvent.getDestFSM();
+                        target.currentState = target.currentState.takeEvent(nextEvent);
                         // IF the source in nextEvent was a UI component, this call can notify it
-                        this.notifyUIEventComplete(nextEvent);
+                        target.notifyUIEventComplete(nextEvent);
                     }
                 }
             }
         }
 
-        /// <summary>
-        /// IF the event we have just processed was received from a 
-        /// UI component ( a Control ) then call the method that has
-        /// been registered as our UICallbackDelegate ( if one has been set )
-        /// passing back this instance of FSM and do it on the UI thread. 
-        /// From that reference the UI should be
-        /// able to find all the info it needs ...
-        /// </summary>
-        /// <param name="evt"></param>
-        public void notifyUIEventComplete(FSM_Event evt) {
-            
-            if(evt.getSource() is Control sourceControl && this.cbDel != null) {
-                object[] myArray = new object[1];
-                myArray[0] = this;
-                sourceControl.BeginInvoke(this.cbDel, myArray);
-            }
-        }
 
         // TODO we need a way to stop the FSM asynchronously, so some sort of callback function ?
-        // TODO this should probably be on a worker thread
+        // TODO look at cancellation tokens ...
 
         public void stopProcessingEvents() {
             this.stopped = true;
@@ -439,7 +445,7 @@
                     this.eventQ.Enqueue(evt);
                 } else {
                     // taskPerClass means we post the  event to the Queue managed
-                    // by the STT
+                    // by the STT   TODO sort out if we need this ...  ugly 
                     this.stt.eventQ.Enqueue(evt);
                 }
                 
