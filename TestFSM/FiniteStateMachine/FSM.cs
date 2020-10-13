@@ -10,6 +10,8 @@
     using System.Windows.Forms;
     using System.Windows.Forms.VisualStyles;
 
+    public enum FSMType { synch, asynch };
+
     /// <summary>
     /// The main Finite State Machine Class....
     /// instances of the FSM class family represent a 'running' FSM
@@ -97,6 +99,26 @@
             FSM_Event evt = new FSM_Event(source, eventName, target);
             FSM.postEvent(evt);
 
+        }
+
+        /// <summary>
+        /// Utility function to simplify creation of an FSM of the correct class from
+        /// business classes
+        /// </summary>
+        /// <param name="fsmName"></param>
+        /// <param name="stt"></param>
+        /// <param name="regInstance"></param>
+        /// <param name="fsmType"></param>
+        /// <returns></returns>
+        public static FSM createFSM( string fsmName, FSM_STT stt, object regInstance, FSMType fsmType) {
+
+            FSM retVal;
+            if(fsmType == FSMType.synch) {
+                retVal = new SYNCH_FSM( fsmName, stt, regInstance);
+            } else {
+                retVal = new ASYNCH_FSM( fsmName, stt, regInstance);
+            }
+            return retVal;
         }
         
         /// <summary>

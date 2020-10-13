@@ -2,20 +2,16 @@
 using TestFSM.FiniteStateMachine;
 
 namespace TestFSM.ObjectModel {
-
     public class ACTOR {
 
         protected string actorName;
         protected FSM fsm;
 
-        public ACTOR(string actorName, FSM_STT stt) {
+        public ACTOR(string actorName, FSM_STT stt, FSMType fsmType) {
             this.actorName = actorName;
-            this.fsm = new ASYNCH_FSM(this.actorName, stt, this);
+            this.fsm = FSM.createFSM(this.actorName, stt, this, fsmType);
             this.fsm.initialise();
-            // TODO want code gen to provide a switch on the type sync/async passed in as a parameter
-            // to the constructor.  Maybe a second constructor for initialising with an event  ?
         }
-
         public STT_State getCurrentState() {
             return this.fsm.getCurrentState();
         }
@@ -183,6 +179,16 @@ namespace TestFSM.ObjectModel {
         public bool Bowing__applauseStoppedGuard(FSM_Event evt) {
             Debug.WriteLine("ACTOR.Bowing__applauseStoppedGuard() allowing event " + evt.getEventName());
             return true;
+        }
+
+        // Implementation of State Ended
+
+        // Method for Entry 
+
+        public void Ended__onEntry(FSM_Event evt) {
+            Debug.WriteLine("ACTOR.Ended__onEntry() Executing in response to event " + evt.getEventName());
+            // delete references as this is an end state and the STT demands it
+            this.dereferenceFSM();
         }
 
 

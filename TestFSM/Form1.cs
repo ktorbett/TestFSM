@@ -109,15 +109,15 @@ namespace TestFSM {
 
             try {
                 FSM_STT mySTTCD = FSM_STT.findByRefClassName("CDPLAYER");
-                new CDPLAYER("cdplayer1", mySTTCD);
-                new CDPLAYER("cdplayer2", mySTTCD);
-                new CDPLAYER("cdplayer3", mySTTCD);
+                new CDPLAYER("cdplayer1", mySTTCD, FSMType.synch);
+                new CDPLAYER("cdplayer2", mySTTCD, FSMType.synch);
+                new CDPLAYER("cdplayer3", mySTTCD, FSMType.synch);
 
                 FSM_STT mySTTACTOR = FSM_STT.findByRefClassName("ACTOR");
-                new ACTOR("actor1", mySTTACTOR);
-                new ACTOR("actor2", mySTTACTOR);
-                new ACTOR("actor3", mySTTACTOR);
-                new ACTOR("actor4", mySTTACTOR);
+                new ACTOR("actor1", mySTTACTOR, FSMType.asynch);
+                new ACTOR("actor2", mySTTACTOR, FSMType.asynch);
+                new ACTOR("actor3", mySTTACTOR, FSMType.asynch);
+                new ACTOR("actor4", mySTTACTOR, FSMType.asynch);
             } catch(Exception ex) {
                 Debug.WriteLine(ex.Message);
             }
@@ -154,9 +154,14 @@ namespace TestFSM {
         }
 
         private void writeCodeToFileButton_Click(object sender, EventArgs e) {
-            // get the STT from the selections list
-            FSM_STT mySTT = FSM_STT.findByRefClassName(this.listBox2.SelectedItem.ToString());
-            FSM_CodeBuilder.writeCodeToFile(mySTT);
+            // get the STTs from the selections list
+            // looop over the selection as necessary ... 
+            
+            foreach (  var sel in this.listBox2.SelectedItems ) {
+                FSM_STT mySTT = FSM_STT.findByRefClassName( sel.ToString());
+                FSM_CodeBuilder.writeCodeToFile(textBox1.Text, mySTT);
+            }
+            
         }
 
         private void ignoreExistingCodeCheckBox_CheckedChanged(object sender, EventArgs e) {
@@ -184,5 +189,18 @@ namespace TestFSM {
             retVal.Append("      }\n\n");
         }
 
+        private void button1_Click(object sender, EventArgs e) {
+            // pick a directory to generate the code in
+            //
+            using(var fbd = new FolderBrowserDialog()) {
+
+                fbd.RootFolder = Environment.SpecialFolder.MyDocuments;
+                DialogResult result = fbd.ShowDialog();
+
+                if(result == DialogResult.OK && !string.IsNullOrWhiteSpace(fbd.SelectedPath)) {
+                    textBox1.Text = fbd.SelectedPath;
+                }
+            }
+        }
     }
 }

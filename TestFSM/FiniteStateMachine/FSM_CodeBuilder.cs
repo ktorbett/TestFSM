@@ -236,13 +236,14 @@
             retVal.Append("   public class ").Append(className).Append("\n");
             retVal.Append("   {\n\n");
             string instNameName = className.ToLower() + "Name";
-            retVal.Append("      protected String ").Append(instNameName).Append(";\n");
+            retVal.Append("      protected string ").Append(instNameName).Append(";\n");
             retVal.Append("      protected FSM fsm;\n\n");
-            retVal.Append("      public ").Append(className).Append("( String ")
-                .Append(instNameName).Append(", FSM_STT stt )\n");
+            retVal.Append("      public ").Append(className).Append("( string ")
+                .Append(instNameName).Append(", FSM_STT stt, FSMType fsmType )\n");
             retVal.Append("      {\n");
             retVal.Append("         this.").Append(instNameName).Append(" = ").Append(instNameName).Append(";\n");
-            retVal.Append("         this.fsm = new FSM(this.").Append(instNameName).Append(", stt, this);\n");
+            retVal.Append("         this.fsm = FSM.createFSM(this.").Append(instNameName).
+                                    Append(", stt, this, fsmType);\n");
             retVal.Append("         this.fsm.initialise();\n");
             retVal.Append("      }\n\n");
             retVal.Append("      public STT_State getCurrentState()\n");
@@ -284,7 +285,7 @@
             retVal.Append("__onEntry() Executing in response to event \" + evt.getEventName());\n");
             if(theSTT.getDeleteWhenEndStateReached() && state.getIsFinalState()) {
                 retVal.Append("         // delete references as this is an end state and the STT demands it\n");
-                retVal.Append("         this.derefenceFSM();\n");
+                retVal.Append("         this.dereferenceFSM();\n");
             }
             retVal.Append("      }\n\n");
         }
@@ -347,9 +348,13 @@
         /// The writeCodeToFile.
         /// </summary>
         /// <param name="theSTT">The theSTT<see cref="FSM_STT"/>.</param>
-        public static void writeCodeToFile(FSM_STT theSTT) {
-            File.Delete(@".\NewCode.txt");
-            File.WriteAllText(@".\NewCode.txt", createOMCodeFromSTT(theSTT));
+        public static void writeCodeToFile(string fileDir, FSM_STT theSTT) {
+            // File.Delete(@".\NewCode.txt");
+            // if filedir doesn't have trailing slash, put one in.
+            fileDir = fileDir + "\\";
+            string fileName = fileDir + theSTT.getRefClassName() + ".csx";
+            File.Delete( fileName);
+            File.WriteAllText( fileName, createOMCodeFromSTT(theSTT));
         }
     }
 }

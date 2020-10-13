@@ -48,6 +48,8 @@
             this.listBox1 = new System.Windows.Forms.ListBox();
             this.label5 = new System.Windows.Forms.Label();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.textBox1 = new System.Windows.Forms.TextBox();
+            this.button1 = new System.Windows.Forms.Button();
             this.listBox2 = new System.Windows.Forms.ListBox();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
@@ -112,7 +114,7 @@
             // 
             // createOMInstancesButton
             // 
-            this.createOMInstancesButton.Location = new System.Drawing.Point(340, 301);
+            this.createOMInstancesButton.Location = new System.Drawing.Point(21, 323);
             this.createOMInstancesButton.Name = "createOMInstancesButton";
             this.createOMInstancesButton.Size = new System.Drawing.Size(197, 34);
             this.createOMInstancesButton.TabIndex = 6;
@@ -131,9 +133,9 @@
             this.groupBox1.Controls.Add(this.label1);
             this.groupBox1.Controls.Add(this.listOfInstancesListBox);
             this.groupBox1.Controls.Add(this.eventListComboBox);
-            this.groupBox1.Location = new System.Drawing.Point(21, 351);
+            this.groupBox1.Location = new System.Drawing.Point(21, 377);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(910, 304);
+            this.groupBox1.Size = new System.Drawing.Size(929, 307);
             this.groupBox1.TabIndex = 7;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Send an Event";
@@ -184,7 +186,7 @@
             // 
             // writeCodeToFileButton
             // 
-            this.writeCodeToFileButton.Location = new System.Drawing.Point(213, 63);
+            this.writeCodeToFileButton.Location = new System.Drawing.Point(272, 263);
             this.writeCodeToFileButton.Name = "writeCodeToFileButton";
             this.writeCodeToFileButton.Size = new System.Drawing.Size(197, 34);
             this.writeCodeToFileButton.TabIndex = 8;
@@ -195,17 +197,17 @@
             // ignoreExistingCodeCheckBox
             // 
             this.ignoreExistingCodeCheckBox.AutoSize = true;
-            this.ignoreExistingCodeCheckBox.Location = new System.Drawing.Point(131, 212);
+            this.ignoreExistingCodeCheckBox.Location = new System.Drawing.Point(205, 113);
             this.ignoreExistingCodeCheckBox.Name = "ignoreExistingCodeCheckBox";
-            this.ignoreExistingCodeCheckBox.Size = new System.Drawing.Size(313, 29);
+            this.ignoreExistingCodeCheckBox.Size = new System.Drawing.Size(267, 29);
             this.ignoreExistingCodeCheckBox.TabIndex = 9;
-            this.ignoreExistingCodeCheckBox.Text = "Only Generate Missing Constructs?";
+            this.ignoreExistingCodeCheckBox.Text = "Only Generate Missing Parts?";
             this.ignoreExistingCodeCheckBox.UseVisualStyleBackColor = true;
             this.ignoreExistingCodeCheckBox.CheckedChanged += new System.EventHandler(this.ignoreExistingCodeCheckBox_CheckedChanged);
             // 
             // changeOnEntryCodeButton
             // 
-            this.changeOnEntryCodeButton.Location = new System.Drawing.Point(213, 119);
+            this.changeOnEntryCodeButton.Location = new System.Drawing.Point(205, 63);
             this.changeOnEntryCodeButton.Name = "changeOnEntryCodeButton";
             this.changeOnEntryCodeButton.Size = new System.Drawing.Size(197, 34);
             this.changeOnEntryCodeButton.TabIndex = 10;
@@ -220,7 +222,7 @@
             this.groupBox2.Controls.Add(this.label2);
             this.groupBox2.Location = new System.Drawing.Point(21, 23);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(435, 261);
+            this.groupBox2.Size = new System.Drawing.Size(420, 277);
             this.groupBox2.TabIndex = 11;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "State Transition Tables";
@@ -231,6 +233,7 @@
             this.listBox1.ItemHeight = 25;
             this.listBox1.Location = new System.Drawing.Point(219, 63);
             this.listBox1.Name = "listBox1";
+            this.listBox1.SelectionMode = System.Windows.Forms.SelectionMode.None;
             this.listBox1.Size = new System.Drawing.Size(180, 129);
             this.listBox1.TabIndex = 3;
             // 
@@ -239,37 +242,57 @@
             this.label5.AutoSize = true;
             this.label5.Location = new System.Drawing.Point(471, 50);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(202, 25);
+            this.label5.Size = new System.Drawing.Size(205, 25);
             this.label5.TabIndex = 4;
-            this.label5.Text = "Pick a Class to generate:";
+            this.label5.Text = "Pick Classes to generate:";
             // 
             // groupBox3
             // 
+            this.groupBox3.Controls.Add(this.textBox1);
+            this.groupBox3.Controls.Add(this.button1);
             this.groupBox3.Controls.Add(this.listBox2);
             this.groupBox3.Controls.Add(this.writeCodeToFileButton);
             this.groupBox3.Controls.Add(this.changeOnEntryCodeButton);
             this.groupBox3.Controls.Add(this.ignoreExistingCodeCheckBox);
             this.groupBox3.Location = new System.Drawing.Point(462, 23);
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(469, 261);
+            this.groupBox3.Size = new System.Drawing.Size(488, 318);
             this.groupBox3.TabIndex = 12;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "Code Generation";
+            // 
+            // textBox1
+            // 
+            this.textBox1.Location = new System.Drawing.Point(19, 213);
+            this.textBox1.Name = "textBox1";
+            this.textBox1.Size = new System.Drawing.Size(430, 31);
+            this.textBox1.TabIndex = 12;
+            // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(205, 158);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(225, 34);
+            this.button1.TabIndex = 11;
+            this.button1.Text = "Pick Code Gen Directory";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
             // listBox2
             // 
             this.listBox2.FormattingEnabled = true;
             this.listBox2.ItemHeight = 25;
-            this.listBox2.Location = new System.Drawing.Point(9, 63);
+            this.listBox2.Location = new System.Drawing.Point(19, 63);
             this.listBox2.Name = "listBox2";
-            this.listBox2.Size = new System.Drawing.Size(169, 129);
+            this.listBox2.SelectionMode = System.Windows.Forms.SelectionMode.MultiSimple;
+            this.listBox2.Size = new System.Drawing.Size(166, 129);
             this.listBox2.TabIndex = 3;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 25F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(959, 667);
+            this.ClientSize = new System.Drawing.Size(1031, 703);
             this.Controls.Add(this.label5);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.createOMInstancesButton);
@@ -311,6 +334,8 @@
         private System.Windows.Forms.GroupBox groupBox3;
         private System.Windows.Forms.ListBox listBox2;
         private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.TextBox textBox1;
+        private System.Windows.Forms.Button button1;
     }
 }
 

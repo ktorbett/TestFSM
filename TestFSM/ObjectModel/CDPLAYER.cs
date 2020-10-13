@@ -4,15 +4,12 @@ using TestFSM.FiniteStateMachine;
 namespace TestFSM.ObjectModel {
     internal class CDPLAYER {
         private readonly FSM fsm;
-        private readonly string instanceName;
+        private readonly string cdplayerName;
 
-        public CDPLAYER(string newName, FSM_STT stt) {
-            this.instanceName = newName;
-            this.fsm = new SYNCH_FSM(this.instanceName, stt, this);
+        public CDPLAYER(string cdplayerName, FSM_STT stt, FSMType fsmType) {
+            this.cdplayerName = cdplayerName;
+            this.fsm = FSM.createFSM(this.cdplayerName, stt, this, fsmType);
             this.fsm.initialise();
-
-            // TODO want code gen to provide a switch on the type sync/async passed in as a parameter
-            // to the constructor
         }
 
         //FSM Methods Required for class  CDPLAYER
