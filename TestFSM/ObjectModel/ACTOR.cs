@@ -71,12 +71,11 @@ namespace TestFSM.ObjectModel {
         public void OnStage__onEntry(FSM_Event evt) {
 
             Debug.WriteLine("ACTOR.OnStage__onEntry() Executing in response to event " + evt.getEventName());
-            // Find the CDPlayer:player1.  If its playing send 'play'
+            
+            // Find the CDPlayer:player1.  If its not playing send 'play'
             FSM playerFSM = FSM.findByFSMName("CDPLAYER:cdplayer1");
             if(playerFSM.getCurrentState().getStateName() != "Playing") {
-                // send it an event.
-                //
-
+                
                 FSM_Event newEvent = new FSM_Event(this, "startPlaying", playerFSM);
                 FSM.postEvent(newEvent);
             }
