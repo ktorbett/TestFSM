@@ -83,12 +83,11 @@
         protected UICallbackDelegate cbDel;
 
         /// <summary>
-        /// Creates a new instance of the <see cref="FSM"/> class.
+        /// Utility to create and send an event.
         /// </summary>
-        /// <param name="newId">.</param>
-        /// <param name="fsmSTT">.</param>
-        /// <param name="registeringInstance">.</param>
-
+        /// <param name="source"></param>
+        /// <param name="eventName"></param>
+        /// <param name="target"></param>
         public static void postEvent(object source, string eventName, FSM target) {
 
             FSM_Event evt = new FSM_Event(source, eventName, target);
@@ -127,8 +126,18 @@
             target.takeEvent(evt);
         }
 
+        /// <summary>
+        /// Take and handle the event.  implemented in subclasses SYNCH_FSM and ASYNCH_FSM
+        /// </summary>
+        /// <param name="evt"></param>
         public abstract void takeEvent(FSM_Event evt);
 
+        /// <summary>
+        /// Creates a new instance of the <see cref="FSM"/> class.
+        /// </summary>
+        /// <param name="newId">.</param>
+        /// <param name="fsmSTT">.</param>
+        /// <param name="registeringInstance">.</param>
         public FSM(string newId, FSM_STT fsmSTT, object registeringInstance) {
             string riClassName = registeringInstance.GetType().Name;
             if(riClassName == fsmSTT.refClassName) {
@@ -335,13 +344,13 @@
             if(this.stt.taskModel == taskAllocation.taskPerClass) {
                 // if taskModel, all instances share the eventProcessor Queue held in the STT
                 if(this.stt.eventProcessor == null) {
-                    this.stt.eventProcessor = new FSM_EventProcessor(10000, "FSM_STT:" + this.stt.refClassName);
+                    this.stt.eventProcessor = new FSM_EventProcessor(10000, "FSM_STT " + this.stt.refClassName);
                 }
                 this.eventProcessor = this.stt.eventProcessor;
 
             } else {  // we want a new event processor for every instance
 
-                this.eventProcessor = new FSM_EventProcessor(10000, "FSM:" + this.fsmName);
+                this.eventProcessor = new FSM_EventProcessor(10000, "FSM " + this.fsmName);
             }
         }
 

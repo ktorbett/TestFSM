@@ -89,10 +89,9 @@ namespace TestFSM.ObjectModel {
 
             // Find the CDPlayer:player1.  If its not playing send 'play'
             FSM playerFSM = FSM.findByFSMName("CDPLAYER:cdplayer1");
-            if(playerFSM.getCurrentState().getStateName() != "Playing") {
+            if( playerFSM.getCurrentState().getStateName() != "Playing") {
 
-                FSM_Event newEvent = new FSM_Event(this, "startPlaying", playerFSM);
-                FSM.postEvent(newEvent);
+                FSM.postEvent(this, "startPlaying", playerFSM);
             }
         }
 
