@@ -1,7 +1,6 @@
 ﻿namespace TestFSM.FiniteStateMachine {
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.IO.Compression;
 
     /// <summary>
     /// FSM_Event models an event in the run-time of your application, that can be sent
@@ -65,7 +64,7 @@
         /// TODO should we check the source isn't null too ?
         /// </summary>
         /// <returns>true if all OK<see cref="bool"/>.</returns>
-        public bool checkEvent( FSM fsm) {
+        public bool checkEvent(FSM fsm) {
             bool retVal = true;
 
             if(this.destFSM == null || this.destFSM != fsm) {

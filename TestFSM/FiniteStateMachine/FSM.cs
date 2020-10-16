@@ -1,16 +1,11 @@
 ﻿namespace TestFSM.FiniteStateMachine {
-    using System;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Runtime.InteropServices.ComTypes;
-    using System.Runtime.InteropServices.WindowsRuntime;
-    using System.Threading.Tasks;
-    using System.Transactions;
     using System.Windows.Forms;
-    using System.Windows.Forms.VisualStyles;
 
     public enum FSMType { synch, asynch };
+
+    public delegate void UICallbackDelegate(FSM fsm);
 
     /// <summary>
     /// The main Finite State Machine Class....
@@ -110,17 +105,17 @@
         /// <param name="regInstance"></param>
         /// <param name="fsmType"></param>
         /// <returns></returns>
-        public static FSM createFSM( string fsmName, FSM_STT stt, object regInstance, FSMType fsmType) {
+        public static FSM createFSM(string fsmName, FSM_STT stt, object regInstance, FSMType fsmType) {
 
             FSM retVal;
             if(fsmType == FSMType.synch) {
-                retVal = new SYNCH_FSM( fsmName, stt, regInstance);
+                retVal = new SYNCH_FSM(fsmName, stt, regInstance);
             } else {
-                retVal = new ASYNCH_FSM( fsmName, stt, regInstance);
+                retVal = new ASYNCH_FSM(fsmName, stt, regInstance);
             }
             return retVal;
         }
-        
+
         /// <summary>
         /// Use this to send an event to the FSM instance specified in the 
         /// evt structure's 'destFSM' attribute.
@@ -129,11 +124,11 @@
         public static void postEvent(FSM_Event evt) {
 
             FSM target = evt.getDestFSM();
-            target.takeEvent(evt);           
+            target.takeEvent(evt);
         }
 
-        public abstract void takeEvent( FSM_Event evt); 
-        
+        public abstract void takeEvent(FSM_Event evt);
+
         public FSM(string newId, FSM_STT fsmSTT, object registeringInstance) {
             string riClassName = registeringInstance.GetType().Name;
             if(riClassName == fsmSTT.refClassName) {
@@ -279,12 +274,8 @@
         /// </summary>
         public void setInitialState() {
             FSM_Event evt = new FSM_Event(this, "FSMstart", this); // just so the event isn't null
-            setInitialState(evt);
+            this.setInitialState(evt);
         }
-
-        public abstract void initialise();
-        public abstract void initialise( FSM_Event evt);
-
 
         /// <summary>
         /// IF the event we have just processed was received from a 
@@ -322,157 +313,55 @@
         /// <returns>an STT_State representing the new state.</returns>
         public override void takeEvent(FSM_Event evt) {
 
-            if( evt.checkEvent( this)) {
-                this. currentState = this.currentState.takeEvent(evt);
-            } 
-                    
-        }
+            if(evt.checkEvent(this)) {
+                this.currentState = this.currentState.takeEvent(evt);
+            }
 
-        public override void initialise() {
-            
-            this.setInitialState();
-        }
-
-        public override void initialise(FSM_Event evt) {
-            
-            this.setInitialState(evt);
         }
 
     }
 
-   
-    public delegate void UICallbackDelegate(FSM fsm);
+
     public class ASYNCH_FSM : FSM {
 
-        private readonly ConcurrentQueue<FSM_Event> eventQ;
-        private Task fsmTask;
-        
-        private bool stopped;
+        private readonly FSM_EventProcessor eventProcessor;
 
         public ASYNCH_FSM(string newId, FSM_STT fsmSTT, object registeringInstance)
             : base(newId, fsmSTT, registeringInstance) {
             // is there anything else we need to do ?
             // examine the STT taskModel attribute and copy the queue if we need it ?
             // this ensures that posting an event posts it to the right queue
-            if ( this.stt.taskModel == taskAllocation.taskPerClass) {
 
-                // thisQ in fact should point to the one in the STT
-                // as its shared among all instances of ASYNCH_FSM for that 
-                // business class.  same for the task
+            if(this.stt.taskModel == taskAllocation.taskPerClass) {
+                // if taskModel, all instances share the eventProcessor Queue held in the STT
+                if(this.stt.eventProcessor == null) {
+                    this.stt.eventProcessor = new FSM_EventProcessor(10000, "FSM_STT:" + this.stt.refClassName);
+                }
+                this.eventProcessor = this.stt.eventProcessor;
 
-                // TODO - this is ugly and needs to be refactored properly
-                this.eventQ = this.stt.eventQ;
-                this.fsmTask = this.stt.classTask;
-            } else {
-                this.eventQ = new ConcurrentQueue<FSM_Event>();
+            } else {  // we want a new event processor for every instance
+
+                this.eventProcessor = new FSM_EventProcessor(10000, "FSM:" + this.fsmName);
             }
         }
 
         public void setCallBackUIDelegate(UICallbackDelegate cbDel) {
             this.cbDel = cbDel;
         }
-        public override void initialise() {
-
-            this.setInitialState();
-
-            // check which task and Queue we should be starting.
-            // check do we need to start a task ? 
-            // TODO tidy this up -  tests in wrong order ???
-            this.startTask();
-        }
-
-        private void startTask() {
-            if(this.stt.taskModel == taskAllocation.taskPerInstance) {
-                if(!isTaskRunning(this.fsmTask)) { // just a check in case init has been called by mistake
-                    this.fsmTask = Task.Run(() => ASYNCH_FSM.processEvents(this.eventQ));
-                    Debug.WriteLine("ASYNCH_FSM.initialise() processEvents() task " + this.fsmTask.Id +
-                                                " spawned for FSM " + this.fsmName);
-                } else {
-                    Debug.WriteLine("ASYNCH_FSM.initialise() - ignoring request.  The processEvents() task " +
-                        this.fsmTask.Id + " is already running - called in error?");
-                }
-            } else {
-                if(!isTaskRunning(this.stt.classTask)) {
-                    this.stt.classTask = Task.Run(() => ASYNCH_FSM.processEvents(this.stt.eventQ));
-                    this.fsmTask = this.stt.classTask; // do we need this ?
-                    Debug.WriteLine("ASYNCH_FSM.initialise() processEvents() task " + this.fsmTask.Id +
-                                            " spawned for class " + this.stt.refClassName);
-                } else {
-                    Debug.WriteLine("ASYNCH_FSM.initialise() processEvents() task " + this.fsmTask.Id +
-                        " for class " + this.stt.refClassName + " - adding FSM " + this.fsmName);
-                }
-            }
-        }
-
-        private static bool isTaskRunning(Task task) {
-            bool retVal = true;
-            // first check if its null ..
-            if( task == null) { // then we're OK to start.
-       
-                retVal = false;
-            } else {
-                if( task.Status == TaskStatus.Canceled ||
-                    task.Status == TaskStatus.Faulted ||
-                    task.Status == TaskStatus.RanToCompletion) { //  maybe its a restart  ?
-                
-                    retVal = false;
-                } 
-
-            }
-            return retVal;
-        }
-
-        public override void initialise( FSM_Event evt) {
-
-            //  need to call setInitialState( evt) in the parent class , then do the queue setup.
-            this.setInitialState( evt);
-            this.startTask();    
-        }
-
-
-        private static void processEvents( ConcurrentQueue<FSM_Event> evQ) {
-
-            // BlockingCollection looks interesting..as an alternative
-
-            while(true) { // should this be a cancellation token ??  probably yes
-                if(!evQ.IsEmpty) {
-
-                    if( evQ.TryDequeue(out FSM_Event nextEvent)) { // just in case ...
-
-                        // we could make this a task too ???   NO - event processing order must be 
-                        // maintained in an FSM - so the FSM itself is the smallest unit of
-                        // processing that may be carried out in parallel - NOT the state actions
-
-                        FSM target = nextEvent.getDestFSM();
-                        target.currentState = target.currentState.takeEvent(nextEvent);
-                        // IF the source in nextEvent was a UI component, this call can notify it
-                        target.notifyUIEventComplete(nextEvent);
-                    }
-                }
-            }
-        }
-
 
         // TODO we need a way to stop the FSM asynchronously, so some sort of callback function ?
         // TODO look at cancellation tokens ...
 
-        public void stopProcessingEvents() {
-            this.stopped = true;
+        internal FSM_EventProcessor getEventProcessor() {
+            return this.eventProcessor;
         }
 
         public override void takeEvent(FSM_Event evt) {
 
             if(evt.checkEvent(this)) {
-                if ( this.stt.taskModel == taskAllocation.taskPerInstance) {
-                    this.eventQ.Enqueue(evt);
-                } else {
-                    // taskPerClass means we post the  event to the Queue managed
-                    // by the STT   TODO sort out if we need this ...  ugly 
-                    this.stt.eventQ.Enqueue(evt);
-                }
-                
+                this.eventProcessor.enQueue(evt);
             }
         }
-        
+
     }
 }

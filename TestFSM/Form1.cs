@@ -44,7 +44,7 @@ namespace TestFSM {
             STT_State endedState = mySTTACTOR.addState("Ended");
             mySTTACTOR.setInitialState(inWingsState);
             mySTTACTOR.setDeleteWhenEndStateReached();
-            mySTTACTOR.setTaskModel(taskAllocation.taskPerClass);
+            mySTTACTOR.setTaskModel(taskAllocation.taskPerInstance);
 
             // Transitions
 
@@ -114,10 +114,23 @@ namespace TestFSM {
                 new CDPLAYER("cdplayer3", mySTTCD, FSMType.synch);
 
                 FSM_STT mySTTACTOR = FSM_STT.findByRefClassName("ACTOR");
-                new ACTOR("actor1", mySTTACTOR, FSMType.asynch);
-                new ACTOR("actor2", mySTTACTOR, FSMType.asynch);
-                new ACTOR("actor3", mySTTACTOR, FSMType.asynch);
-                new ACTOR("actor4", mySTTACTOR, FSMType.asynch);
+                ACTOR a1 = new ACTOR("actor1", mySTTACTOR, FSMType.asynch);
+                ACTOR a2 = new ACTOR("actor2", mySTTACTOR, FSMType.asynch);
+                ACTOR a3 = new ACTOR("actor3", mySTTACTOR, FSMType.asynch);
+                ACTOR a4 = new ACTOR("actor4", mySTTACTOR, FSMType.asynch);
+
+                if(a1.getFSM() is ASYNCH_FSM a1FSM) {
+                    Debug.WriteLine("a1 using " + a1FSM.getEventProcessor().caller);
+                }
+                if(a2.getFSM() is ASYNCH_FSM a2FSM) {
+                    Debug.WriteLine("a2 using " + a2FSM.getEventProcessor().caller);
+                }
+                if(a3.getFSM() is ASYNCH_FSM a3FSM) {
+                    Debug.WriteLine("a3 using " + a3FSM.getEventProcessor().caller);
+                }
+                if(a4.getFSM() is ASYNCH_FSM a4FSM) {
+                    Debug.WriteLine("a4 using " + a4FSM.getEventProcessor().caller);
+                }
             } catch(Exception ex) {
                 Debug.WriteLine(ex.Message);
             }
@@ -156,12 +169,12 @@ namespace TestFSM {
         private void writeCodeToFileButton_Click(object sender, EventArgs e) {
             // get the STTs from the selections list
             // looop over the selection as necessary ... 
-            
-            foreach (  var sel in this.listBox2.SelectedItems ) {
-                FSM_STT mySTT = FSM_STT.findByRefClassName( sel.ToString());
-                FSM_CodeBuilder.writeCodeToFile(textBox1.Text, mySTT);
+
+            foreach(object sel in this.listBox2.SelectedItems) {
+                FSM_STT mySTT = FSM_STT.findByRefClassName(sel.ToString());
+                FSM_CodeBuilder.writeCodeToFile(this.textBox1.Text, mySTT);
             }
-            
+
         }
 
         private void ignoreExistingCodeCheckBox_CheckedChanged(object sender, EventArgs e) {
@@ -192,13 +205,13 @@ namespace TestFSM {
         private void button1_Click(object sender, EventArgs e) {
             // pick a directory to generate the code in
             //
-            using(var fbd = new FolderBrowserDialog()) {
+            using(FolderBrowserDialog fbd = new FolderBrowserDialog()) {
 
                 fbd.RootFolder = Environment.SpecialFolder.MyDocuments;
                 DialogResult result = fbd.ShowDialog();
 
                 if(result == DialogResult.OK && !string.IsNullOrWhiteSpace(fbd.SelectedPath)) {
-                    textBox1.Text = fbd.SelectedPath;
+                    this.textBox1.Text = fbd.SelectedPath;
                 }
             }
         }

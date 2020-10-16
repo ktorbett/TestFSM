@@ -244,7 +244,11 @@
             retVal.Append("         this.").Append(instNameName).Append(" = ").Append(instNameName).Append(";\n");
             retVal.Append("         this.fsm = FSM.createFSM(this.").Append(instNameName).
                                     Append(", stt, this, fsmType);\n");
-            retVal.Append("         this.fsm.initialise();\n");
+            retVal.Append("         this.fsm.setInitialState();\n");
+            retVal.Append("      }\n\n");
+            retVal.Append("      public FSM getFSM()\n");
+            retVal.Append("      {\n");
+            retVal.Append("         return this.fsm;\n");
             retVal.Append("      }\n\n");
             retVal.Append("      public STT_State getCurrentState()\n");
             retVal.Append("      {\n");
@@ -259,7 +263,7 @@
             retVal.Append("         this.fsm = null;\n");
             retVal.Append("      }\n\n");
             retVal.Append("      // Processes an event.  Passes it on to the FSM\n");
-            retVal.Append("      public STT_State takeEvent( FSM_Event evt)\n");
+            retVal.Append("      public void takeEvent( FSM_Event evt)\n");
             retVal.Append("      {\n");
             retVal.Append("         this.fsm.takeEvent( evt);\n");
             retVal.Append("      }\n\n");
@@ -353,8 +357,8 @@
             // if filedir doesn't have trailing slash, put one in.
             fileDir = fileDir + "\\";
             string fileName = fileDir + theSTT.getRefClassName() + ".csx";
-            File.Delete( fileName);
-            File.WriteAllText( fileName, createOMCodeFromSTT(theSTT));
+            File.Delete(fileName);
+            File.WriteAllText(fileName, createOMCodeFromSTT(theSTT));
         }
     }
 }

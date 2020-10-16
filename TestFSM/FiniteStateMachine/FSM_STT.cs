@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Threading.Tasks;
 
 namespace TestFSM.FiniteStateMachine {
 
@@ -66,16 +64,16 @@ namespace TestFSM.FiniteStateMachine {
         /// with all the instances of FSM for that class sharing the same execution thread.
         /// But we can change this to one Task for every instance of FSM instead.
         /// </summary>
-        internal taskAllocation taskModel = taskAllocation.taskPerInstance;  //or taskAllocation.classPerInstance
-        internal Task classTask;
-        internal ConcurrentQueue<FSM_Event> eventQ = new ConcurrentQueue<FSM_Event>();
-        public taskAllocation getTaskModel() {
-            return this.taskModel;
-        }
+        internal taskAllocation taskModel = taskAllocation.taskPerInstance;  //or taskAllocation.taskPerClass
 
-        // do we need a processEvents as well ? 
+        /// <summary>
+        /// IF the taskModel is 'taskPerClass' then there will be one event processing queue here
+        /// which will accept and then process all events posted at instances of the class that this 
+        /// STT models.  On a single thread.
+        /// </summary>
+        internal FSM_EventProcessor eventProcessor = null;
 
-        public void setTaskModel( taskAllocation alloc) {
+        public void setTaskModel(taskAllocation alloc) {
             this.taskModel = alloc;
         }
 
@@ -98,10 +96,6 @@ namespace TestFSM.FiniteStateMachine {
         /// </summary>
         private bool deleteWhenEndStateReached = false;  // TODO - implement a call ...
 
-        internal void postEvent(FSM_Event evt) {
-            throw new NotImplementedException();
-        }
-
         /// <summary>
         /// DERIVED list of the the events that this STT can consume.  In effect
         /// it is the union of all the events that can transition out of
@@ -115,6 +109,7 @@ namespace TestFSM.FiniteStateMachine {
         }
 
         // Getters and Setters
+
         public bool getDeleteWhenEndStateReached() {
             return this.deleteWhenEndStateReached;
         }
@@ -171,7 +166,6 @@ namespace TestFSM.FiniteStateMachine {
         }
 
         // Accessors
-
         internal void addToStatesList(STT_State newState) {
             this.statesList.Add(newState);
         }
