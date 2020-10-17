@@ -19,7 +19,7 @@ namespace TestFSM.FiniteStateMachine {
         /// <summary>
         /// This constructor allows the FSM_EventProcessor to set the size of the internal 
         /// BlockingCollection and also to know ( for debug purposes only at present ) whether 
-        /// it 'belongs' to an STT or an FSM. 
+        /// it 'belongs' to an STT or an FSM and which one called it into being.
         /// </summary>
         /// <param name="size"></param>
         /// <param name="callerName"></param>
@@ -58,7 +58,7 @@ namespace TestFSM.FiniteStateMachine {
                 }
             }, token);
             // TODO how do we catch the cancellation exception if its thrown? 
-            // and how do we stop the process ... 
+            // and how do we stop the process ...  i.e. set up the cancellation request in the first place?
         }
 
         /// <summary>

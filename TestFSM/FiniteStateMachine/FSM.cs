@@ -1,10 +1,11 @@
 ﻿namespace TestFSM.FiniteStateMachine {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Windows.Forms;
 
     public enum FSMType { synch, asynch };
-
+    
     public delegate void UICallbackDelegate(FSM fsm);
 
     /// <summary>
@@ -81,6 +82,10 @@
         internal object registeredInstance;// the instance of the business class this FSM is for
 
         protected UICallbackDelegate cbDel;
+
+        public string getCurrentStateName() {
+            return this.currentState.stateName;
+        }
 
         /// <summary>
         /// Utility to create and send an event.

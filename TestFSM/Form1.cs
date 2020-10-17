@@ -119,18 +119,7 @@ namespace TestFSM {
                 ACTOR a3 = new ACTOR("actor3", mySTTACTOR, FSMType.asynch);
                 ACTOR a4 = new ACTOR("actor4", mySTTACTOR, FSMType.asynch);
 
-                if(a1.getFSM() is ASYNCH_FSM a1FSM) {
-                    Debug.WriteLine("a1 using " + a1FSM.getEventProcessor().caller);
-                }
-                if(a2.getFSM() is ASYNCH_FSM a2FSM) {
-                    Debug.WriteLine("a2 using " + a2FSM.getEventProcessor().caller);
-                }
-                if(a3.getFSM() is ASYNCH_FSM a3FSM) {
-                    Debug.WriteLine("a3 using " + a3FSM.getEventProcessor().caller);
-                }
-                if(a4.getFSM() is ASYNCH_FSM a4FSM) {
-                    Debug.WriteLine("a4 using " + a4FSM.getEventProcessor().caller);
-                }
+                
             } catch(Exception ex) {
                 Debug.WriteLine(ex.Message);
             }
@@ -202,6 +191,51 @@ namespace TestFSM {
             retVal.Append("      }\n\n");
         }
 
+        private static void WriteDifferentClassCode(FSM_STT theSTT, StringBuilder retVal) {
+
+            // TODO want code gen to provide a switch on the type sync/async passed in as a parameter
+            // to the constructor.  Maybe a second constructor for initialising with an event  ?
+
+            string className = theSTT.getRefClassName();
+            retVal.Append("\n\n   // ADD CLASS\n");
+            retVal.Append("   public class ").Append(className).Append("\n");
+            retVal.Append("   {\n\n");
+            string instNameName = className.ToLower() + "Name";
+            retVal.Append("      protected string ").Append(instNameName).Append(";\n");
+            retVal.Append("      protected FSM fsm;\n\n");
+            retVal.Append("      public ").Append(className).Append("( string ")
+                .Append(instNameName).Append(", FSM_STT stt, FSMType fsmType )\n");
+            retVal.Append("      {\n");
+            retVal.Append("         this.").Append(instNameName).Append(" = ").Append(instNameName).Append(";\n");
+            retVal.Append("         this.fsm = FSM.createFSM(this.").Append(instNameName).
+                                    Append(", stt, this, fsmType);\n");
+            retVal.Append("         this.fsm.setInitialState();\n");
+            retVal.Append("      }\n\n");
+            retVal.Append("      public FSM getFSM()\n");
+            retVal.Append("      {\n");
+            retVal.Append("         return this.fsm;\n");
+            retVal.Append("      }\n\n");
+            retVal.Append("      public STT_State getCurrentState()\n");
+            retVal.Append("      {\n");
+            retVal.Append("         return this.fsm.getCurrentState();\n");
+            retVal.Append("      }\n\n");
+            retVal.Append("      // Use this in the body of your StateName__onEntry() methods for the end states\n");
+            retVal.Append("      // of the FSM ( the ones with no exit transitions ) and want to 'delete the FSM'\n");
+            retVal.Append("      // and references to tidy stuff up.\n");
+            retVal.Append("      protected void dereferenceFSM()\n");
+            retVal.Append("      {\n");
+            retVal.Append("         FSM.removeFromInstanceList(this.fsm);\n");
+            retVal.Append("         this.fsm = null;\n");
+            retVal.Append("      }\n\n");
+            retVal.Append("      // Processes an event.  Passes it on to the FSM\n");
+            retVal.Append("      public void takeEvent( FSM_Event evt)\n");
+            retVal.Append("      {\n");
+            retVal.Append("         this.fsm.takeEvent( evt);\n");
+            retVal.Append("      }\n\n");
+
+        }
+
+        
         private void button1_Click(object sender, EventArgs e) {
             // pick a directory to generate the code in
             //

@@ -235,6 +235,9 @@
             retVal.Append("\n\n   // ADD CLASS\n");
             retVal.Append("   public class ").Append(className).Append("\n");
             retVal.Append("   {\n\n");
+            // need a section to find all the states and create a struct for then as variables
+            // so we don't have to get it wrong with state names as strings.
+            DeriveStateEventTypeDefs(theSTT, retVal);
             string instNameName = className.ToLower() + "Name";
             retVal.Append("      protected string ").Append(instNameName).Append(";\n");
             retVal.Append("      protected FSM fsm;\n\n");
@@ -347,6 +350,29 @@
             retVal.Append("__onExit() Executing in response to event \" + evt.getEventName());\n");
             retVal.Append("      }\n\n");
         }
+
+        private static void DeriveStateEventTypeDefs(FSM_STT theSTT, StringBuilder retVal) {
+            retVal.Append("// Typedef for States Name strings.  These are inner classes so that\n");
+            retVal.Append("// instead of writing state names like \"receiveCue\" in code (and possibly making\n");
+            retVal.Append("// an error) - instead write ACTOR.States.receiveCue and intellisense will help \n\n");
+            retVal.Append("    public class States {\n");
+            foreach(STT_State state in theSTT.getStatesList()) {
+                string stateName = state.getStateName();
+                retVal.Append("        public const string ").Append(stateName).Append(" = \"")
+                    .Append(stateName).Append("\";\n");
+            }
+            retVal.Append("    }\n\n");
+
+            retVal.Append("// Typedef for Event Name strings\n\n");
+            retVal.Append("    public class Events {\n");
+            foreach(string evt in theSTT.getEventsList()) {
+                retVal.Append("        public const string ").Append(evt).Append(" = \"")
+                    .Append(evt).Append("\";\n");
+            }
+            retVal.Append("    }\n\n");
+
+        }
+
 
         /// <summary>
         /// The writeCodeToFile.

@@ -108,6 +108,7 @@ namespace TestFSM.FiniteStateMachine {
             this.eventsList.Add(eventName);
         }
 
+        
         // Getters and Setters
 
         public bool getDeleteWhenEndStateReached() {
