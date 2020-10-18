@@ -111,7 +111,7 @@ namespace TestFSM {
                 FSM_STT mySTTCD = FSM_STT.findByRefClassName("CDPLAYER");
                 new CDPLAYER("cdplayer1", mySTTCD, FSMType.synch);
                 new CDPLAYER("cdplayer2", mySTTCD, FSMType.synch);
-                new CDPLAYER("cdplayer3", mySTTCD, FSMType.synch);
+                CDPLAYER c3 = new CDPLAYER("cdplayer3", mySTTCD, FSMType.synch);
 
                 FSM_STT mySTTACTOR = FSM_STT.findByRefClassName("ACTOR");
                 ACTOR a1 = new ACTOR("actor1", mySTTACTOR, FSMType.asynch);

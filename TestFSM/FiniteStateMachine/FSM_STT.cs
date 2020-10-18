@@ -158,7 +158,7 @@ namespace TestFSM.FiniteStateMachine {
         public FSM_STT(string refClassName, string nameSpace) {
             this.refClassName = refClassName;
             this.nameSpace = nameSpace;
-            this.OMClass = Type.GetType(this.refClassName);
+            this.OMClass = Type.GetType(this.nameSpace + "." + this.refClassName);
             try {
                 FSM_STT.instanceList.Add(refClassName, this);
             } catch(Exception ex) {
