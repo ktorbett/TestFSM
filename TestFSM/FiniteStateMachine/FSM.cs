@@ -81,8 +81,6 @@
         /// </summary>
         internal object registeredInstance;// the instance of the business class this FSM is for
 
-        protected UICallbackDelegate cbDel;
-
         public string getCurrentStateName() {
             return this.currentState.stateName;
         }
@@ -135,7 +133,7 @@
         /// Take and handle the event.  implemented in subclasses SYNCH_FSM and ASYNCH_FSM
         /// </summary>
         /// <param name="evt"></param>
-        public abstract void takeEvent(FSM_Event evt);
+        internal abstract void takeEvent(FSM_Event evt);
 
         /// <summary>
         /// Creates a new instance of the <see cref="FSM"/> class.
@@ -216,18 +214,6 @@
         }
 
         /// <summary>
-        /// Sends an event.  Source is an Object rather than an FSM so that anything can send an event - 
-        /// for example a UI control.  It doesn't have to come from another instance of FSM.
-        /// </summary>
-        /// <param name="source">.</param>
-        /// <param name="eventName">.</param>
-        /// <param name="toFSM">.</param>
-        public static void createAndSendEvent(object source, string eventName, FSM toFSM) {
-            FSM_Event newEvent = new FSM_Event(source, eventName, toFSM);
-            FSM.postEvent(newEvent);
-        }
-
-        /// <summary>
         /// Gets the current state of the FSM.
         /// </summary>
         /// <returns>The <see cref="STT_State"/>.</returns>
@@ -300,14 +286,7 @@
         /// able to find all the info it needs ...
         /// </summary>
         /// <param name="evt"></param>
-        internal void notifyUIEventComplete(FSM_Event evt) {
-
-            if(evt.getSource() is Control sourceControl && this.cbDel != null) {
-                object[] myArray = new object[1];
-                myArray[0] = this;
-                sourceControl.BeginInvoke(this.cbDel, myArray);
-            }
-        }
+        
     }
 
     public class SYNCH_FSM : FSM {
@@ -325,7 +304,7 @@
         /// </summary>
         /// <param name="evt">.</param>
         /// <returns>an STT_State representing the new state.</returns>
-        public override void takeEvent(FSM_Event evt) {
+        internal override void takeEvent(FSM_Event evt) {
 
             if(evt.checkEvent(this)) {
                 this.currentState = this.currentState.takeEvent(evt);
@@ -339,6 +318,8 @@
     public class ASYNCH_FSM : FSM {
 
         private readonly FSM_EventProcessor eventProcessor;
+        private UICallbackDelegate cbDel;
+
 
         public ASYNCH_FSM(string newId, FSM_STT fsmSTT, object registeringInstance)
             : base(newId, fsmSTT, registeringInstance) {
@@ -363,6 +344,16 @@
             this.cbDel = cbDel;
         }
 
+        internal void notifyUIEventComplete(FSM_Event evt) {
+
+            Debug.Write("ASYNCH_FSM.notifyUIEventComplete() Notifying " + evt.getSource().GetType().ToString());
+            if(evt.getSource() is Control sourceControl && this.cbDel != null) {
+                object[] myArray = new object[1];
+                myArray[0] = this;
+                sourceControl.BeginInvoke(this.cbDel, myArray);
+            }
+        }
+
         // TODO we need a way to stop the FSM asynchronously, so some sort of callback function ?
         // TODO look at cancellation tokens ...
 
@@ -370,7 +361,7 @@
             return this.eventProcessor;
         }
 
-        public override void takeEvent(FSM_Event evt) {
+        internal override void takeEvent(FSM_Event evt) {
 
             if(evt.checkEvent(this)) {
                 this.eventProcessor.enQueue(evt);

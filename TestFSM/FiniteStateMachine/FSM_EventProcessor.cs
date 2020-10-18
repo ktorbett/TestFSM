@@ -44,7 +44,8 @@ namespace TestFSM.FiniteStateMachine {
                     FSM target = nextEvent.getDestFSM();
                     target.currentState = target.currentState.takeEvent(nextEvent);
                     // IF the source in nextEvent was a UI component, this call can notify it
-                    target.notifyUIEventComplete(nextEvent);
+                    // and it DEFINITELY WILL be an instance of ASYCH_FSM ...
+                    ((ASYNCH_FSM)target).notifyUIEventComplete(nextEvent);
 
                 }
 

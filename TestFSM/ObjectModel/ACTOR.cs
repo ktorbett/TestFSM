@@ -118,7 +118,8 @@ namespace TestFSM.ObjectModel {
             FSM playerFSM = FSM.findByFSMName("CDPLAYER:cdplayer1");
             if( playerFSM.getCurrentStateName() != CDPLAYER.States.Playing) { 
             
-                FSM.postEvent(this, "startPlaying", playerFSM);
+                FSM.postEvent(this, CDPLAYER.Events.startPlaying, playerFSM);
+                
             }
         }
 

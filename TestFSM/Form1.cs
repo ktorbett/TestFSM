@@ -133,9 +133,9 @@ namespace TestFSM {
             FSM targetFSM = FSM.findByFSMName(targetFSMName);
             if(targetFSM is ASYNCH_FSM aFSM) {
                 aFSM.setCallBackUIDelegate(this.updateStateTextBox);
-                FSM.createAndSendEvent(this, eventName, targetFSM);
+                FSM.postEvent(this, eventName, targetFSM);
             } else {
-                FSM.createAndSendEvent(this, eventName, targetFSM);
+                FSM.postEvent(this, eventName, targetFSM);
                 this.updateStateTextBox(targetFSM);
             }
         }
@@ -154,7 +154,7 @@ namespace TestFSM {
                 Debug.WriteLine(ex.Message);
             }
         }
-
+        
         private void writeCodeToFileButton_Click(object sender, EventArgs e) {
             // get the STTs from the selections list
             // looop over the selection as necessary ... 
@@ -219,9 +219,9 @@ namespace TestFSM {
             retVal.Append("      {\n");
             retVal.Append("         return this.fsm.getCurrentState();\n");
             retVal.Append("      }\n\n");
-            retVal.Append("      // Use this in the body of your StateName__onEntry() methods for the end states\n");
-            retVal.Append("      // of the FSM ( the ones with no exit transitions ) and want to 'delete the FSM'\n");
-            retVal.Append("      // and references to tidy stuff up.\n");
+            retVal.Append("      // Use this in the body of your StateName__XXXX() methods when\n");
+            retVal.Append("      // you want to 'delete the FSM' ( remember you can't delete in c# )\n");
+            retVal.Append("      // So instead we remove references to tidy stuff up.\n");
             retVal.Append("      protected void dereferenceFSM()\n");
             retVal.Append("      {\n");
             retVal.Append("         FSM.removeFromInstanceList(this.fsm);\n");

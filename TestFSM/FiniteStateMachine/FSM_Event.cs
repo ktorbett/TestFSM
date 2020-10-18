@@ -8,7 +8,7 @@
     /// For example, a timer in your app might create an event named 'timerComplete'.  To send this
     /// event to an FSM you will need to create an event and send it - specifying a destination FSM
     /// in the FSM_Event and an event name ( in this case - probably 'timerComplete' ).  Usually by
-    /// calling an FSM or a business objects's takeEvent() method.
+    /// calling an FSM or a business objects's postEvent() method.
     /// </summary>
     public class FSM_Event {
         /// <summary>
