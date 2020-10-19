@@ -1,4 +1,6 @@
 #FSM:CDPLAYER
+#nameSpace: TestFSM.ObjectModel
+#versionString: Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
 initial,
 "media player off",
 stopped :

@@ -11,13 +11,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="FiniteStateMachine">
-      <HintPath>..\..\FiniteStateMachine\FiniteStateMachine\obj\Debug\netcoreapp3.1\FiniteStateMachine.dll</HintPath>
-    </Reference>
+    <Folder Include="lib\" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="lib\" />
+    <Reference Include="FiniteStateMachine">
+      <HintPath>lib\FiniteStateMachine.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>

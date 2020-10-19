@@ -1,0 +1,886 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>FiniteStateMachine</name>
+    </assembly>
+    <members>
+        <member name="T:KJT.Architecture.FiniteStateMachine.FSM">
+             <summary>
+             The main Finite State Machine Class....
+             instances of the FSM class family represent a 'running' FSM
+             which consumes events and changes its state over time.
+             NOTE:  this is an abstract class so we never get instances of FSM, 
+             only ASYNCH_FSM and SYNCH_FSM.
+             
+             A business class instance can delegate its state behaviour to an FSM.
+             Each FSM will be 'bound' by its 'registeredInstance' attribute to an instance
+             of a business/operational class of the application like ACTOR, CDPLAYER, 
+             PARTICLE etc ( and vice-versa ).
+             
+             To do so the STT that an FSM traverses must have the
+             same refClassName as the business class it is for and we should set
+             the fsmName to include the refClassName of the
+             business class it models.  ACTOR:actor1 for example.
+             The constructor adds the ACTOR: part to whatever is passed in
+            
+             The business classes are required to have a member
+             variable of type FSM ( or one of its subclasses ) and
+             when they receive events they should pass them on to
+             their FSM.
+            
+             Creation of an instance of the business class should
+             chain the creation of an instance of FSM with the same
+             instance refClassName, and set the FSM_STT that the FSM traverses.
+             there is a code generator capability to assist with this in the
+             related class FSM_CodeBuilder.
+            
+             During its operation as it transitions from state to state, an FSM will call
+             methods of the business class to which the STT refers in its refClassName attribute.
+            
+             For example we may require an ACTOR to make a speech when
+             moving from the state OffStage to OnStage, which happens when
+             the event receiveCue occurs. as the FSM moves from OffStage to
+             OnStage, it will try to call methods named OffStage__onExit()
+             OffStage__receiveCueGuard(), OffStage__receiveCue() and OnStage__onEntry().
+             If they don't exist as methods of the ACTOR class, a message will
+             be generated.
+            
+             Thus all the programmer needs to do is to implement these methods according
+             to the naming convention - similar to many other frameworks like windows forms, 
+             Hibernate or Android intents.
+             </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.FSM.currentState">
+            <summary>
+            The current state of this FSM
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.FSM.stt">
+            <summary>
+            Defines the State Transition Table that this FSM is traversing
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.FSM.fsmName">
+            <summary>
+            Should be of the form refClassName:objName of the business class instance that needs FSM abilities
+            i.e If we have an ACTOR with a name attribute set to "actor1" the FSM will be named "ACTOR:actor1".
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.FSM.instanceList">
+            <summary>
+            A Dictionary of instances of the class.  Supports findByFSMName() and other search methods.
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.FSM.registeredInstance">
+            <summary>
+            The instance of business object ( ACTOR, CDPLAYER, PARTICLE  etc ) for which this
+            instance of FSM is managing the state.  TODO - Generics.....
+            </summary>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM.postEvent(System.Object,System.String,KJT.Architecture.FiniteStateMachine.FSM)">
+            <summary>
+            Utility to create and send an event.
+            </summary>
+            <param name="source"></param>
+            <param name="eventName"></param>
+            <param name="target"></param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM.createFSM(System.String,KJT.Architecture.FiniteStateMachine.FSM_STT,System.Object,KJT.Architecture.FiniteStateMachine.FSMType)">
+            <summary>
+            Utility function to simplify creation of an FSM of the correct class from
+            business classes
+            </summary>
+            <param name="fsmName"></param>
+            <param name="stt"></param>
+            <param name="regInstance"></param>
+            <param name="fsmType"></param>
+            <returns></returns>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM.postEvent(KJT.Architecture.FiniteStateMachine.FSM_Event)">
+            <summary>
+            Use this to send an event to the FSM instance specified in the 
+            evt structure's 'destFSM' attribute.
+            </summary>
+            <param name="evt"></param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM.takeEvent(KJT.Architecture.FiniteStateMachine.FSM_Event)">
+            <summary>
+            Take and handle the event.  implemented in subclasses SYNCH_FSM and ASYNCH_FSM
+            </summary>
+            <param name="evt"></param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM.#ctor(System.String,KJT.Architecture.FiniteStateMachine.FSM_STT,System.Object)">
+            <summary>
+            Creates a new instance of the <see cref="T:KJT.Architecture.FiniteStateMachine.FSM"/> class.
+            </summary>
+            <param name="newId">.</param>
+            <param name="fsmSTT">.</param>
+            <param name="registeringInstance">.</param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM.getInstanceList">
+            <summary>
+            The instanceList accessor.
+            </summary>
+            <returns>The list of FSMs as a <see cref="T:System.Collections.Generic.Dictionary`2"/>.</returns>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM.removeFromInstanceList(KJT.Architecture.FiniteStateMachine.FSM)">
+            <summary>
+            Removes an FSM from the <ref>instanceList</ref>.
+            </summary>
+            <param name="fsm">The fsm<see cref="T:KJT.Architecture.FiniteStateMachine.FSM"/>.</param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM.findByFSMName(System.String)">
+            <summary>
+            Allows an external class to find an FSM based on the fsmName - which is composed of 
+            the class name of the registered instance plus that registered instances 'instanceName'.
+            i.e. ACTOR:fred
+            </summary>
+            <param name="fsmName">The fsmName<see cref="T:System.String"/>.</param>
+            <returns>.</returns>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM.findByRegisteredInstance(System.Object)">
+            <summary>
+            Allows an external class to find and FSM based on the registeredInstance.   So an external 
+            class can find the FSM that it needs to send events to based on the business model instance.
+            </summary>
+            <param name="myOMInstance">.</param>
+            <returns>.</returns>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM.getCurrentState">
+            <summary>
+            Gets the current state of the FSM.
+            </summary>
+            <returns>The <see cref="T:KJT.Architecture.FiniteStateMachine.STT_State"/>.</returns>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM.getFSMName">
+            <summary>
+            Gets the FSM name.  This will be of the form ACTOR:fred
+            </summary>
+            <returns>The <see cref="T:System.String"/>.</returns>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM.getSTT">
+            <summary>
+            Gets the State Transition table this FSM is traversing.
+            </summary>
+            <returns>The <see cref="T:KJT.Architecture.FiniteStateMachine.FSM_STT"/>.</returns>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM.getRegisteredInstance">
+            <summary>
+            Gets the Registered Instance of the object model class to which this FSM is bound and 
+            for which it is processing events.
+            </summary>
+            <returns>The <see cref="T:System.Object"/>.</returns>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM.setInitialState(KJT.Architecture.FiniteStateMachine.FSM_Event)">
+            <summary>
+            Needs to be called once a SYNCH_FSM has been created to set its current state
+            and run its onEntry() method for its initial state.  This version takes an event and thus
+            information can be passed to an initialising SYNCH_FSM in the event's data bundle for use
+            in the State__onEntry() method.
+            </summary>
+            <param name="evt">.</param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM.setInitialState">
+            <summary>
+            Needs to be called once an FSM has been created to set its current state
+            and run its onEntry() method for its initial state.
+            </summary>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM.notifyUIEventComplete(KJT.Architecture.FiniteStateMachine.FSM_Event)">
+            <summary>
+            IF the event we have just processed was received from a 
+            UI component ( a Control ) then call the method that has
+            been registered as our UICallbackDelegate ( if one has been set )
+            passing back this instance of FSM and do it on the UI thread. 
+            From that reference the UI should be
+            able to find all the info it needs ...
+            </summary>
+            <param name="evt"></param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.SYNCH_FSM.takeEvent(KJT.Architecture.FiniteStateMachine.FSM_Event)">
+            <summary>
+            Processes an event sent to the FSM.  As a by-product calls the appropriate methods
+            for onEntry(), onExit(), transition() and transitionGuard() in
+            the Object Model class to which this FSM is bound, if they exist.
+            </summary>
+            <param name="evt">.</param>
+            <returns>an STT_State representing the new state.</returns>
+        </member>
+        <member name="T:KJT.Architecture.FiniteStateMachine.WriteClassCodeDelegate">
+            <summary>
+            Delegate type for a method that writes the code for a class.  Allows the developer
+            to modify the default template code if they implement a method with this signature
+            and register it using setWriteClassCode().  The method must append the code to the 
+            StringBuilder retVal.
+            </summary>
+            <param name="theSTT"></param>
+            <param name="retVal"></param>
+        </member>
+        <member name="T:KJT.Architecture.FiniteStateMachine.WriteStateMethodCodeDelegate">
+            <summary>
+            Delegate type for a method that writes the code for a state.  Allows the developer
+            to modify the default template code if they implement a method with this signature
+            and register it using setWriteOnEntryCode() and setWriteOnExitCode().  The method must append the code to the 
+            StringBuilder retVal
+            </summary>
+            <param name="theSTT"></param>
+            <param name="retVal"></param>
+            <param name="state"></param>
+        </member>
+        <member name="T:KJT.Architecture.FiniteStateMachine.WriteTransMethodCodeDelegate">
+            <summary>
+            Delegate type for a method that writes the code for a transition.  Allows the developer
+            to modify the default template code if they implement a method with this signature
+            and register it using setWriteTransCode() and setWriteTransGuardCode.  The method must 
+            append the code to the StringBuilder retVal.
+            </summary>
+            <param name="theSTT"></param>
+            <param name="retVal"></param>
+            <param name="state"></param>
+        </member>
+        <member name="T:KJT.Architecture.FiniteStateMachine.FSM_CodeBuilder">
+            <summary>
+            This class holds the default methods that can be used in the developer/debug environment
+            to generate code for a class given that we have loaded the state transition table that
+            describes its behaviour.  Developers can write a simple app that has a UI to load the STTs
+            and then create code for them, if it does not already exist.  Ensures the convention that
+            the FSM that expects methods to implement states to already be present in the business object
+            model, and have specific names according to a naming convention.
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.FSM_CodeBuilder.writeClassCode">
+            <summary>
+            Pointer ( delegate ) to the method that writes the class code and sets it to the 
+            default value pointing to the static method WriteClassCode() in this 
+            class
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.FSM_CodeBuilder.writeOnEntryCode">
+            <summary>
+            Pointer ( delegate ) to the method that writes the onEntry code for a state. 
+            Default value points to the static method WriteOnEntryMethodCode() in this 
+            class
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.FSM_CodeBuilder.writeOnExitCode">
+            <summary>
+            Pointer ( delegate ) to the method that writes the onExit code for a state. 
+            Default value points to the static method WriteOnExitMethodCode() in this 
+            class
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.FSM_CodeBuilder.writeTransCode">
+            <summary>
+            Pointer ( delegate ) to the method that writes the onTransition code for a transition. 
+            Default value points to the static method WriteTransMethodCode() in this 
+            class
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.FSM_CodeBuilder.writeTransGuardCode">
+            <summary>
+            Pointer ( delegate ) to the method that writes the Guard code for a transition. 
+            Default value points to the static method WriteTransGuardMethodCode() in this 
+            class
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.FSM_CodeBuilder.onlyGenerateMissingCode">
+            <summary>
+            If true, code generation will skip classes and methods that already exist in the Object
+            Model classes..
+            </summary>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM_CodeBuilder.setWriteClassCode(KJT.Architecture.FiniteStateMachine.WriteClassCodeDelegate)">
+            <summary>
+            Allows developer to override the default code generation for business classes.
+            This section is for the class declaration and methods that all business classes
+            must share, such as a constructor that also creates a bound FSM.
+            Create a method in your own code that matches the type signature defined in 
+            <ref>WriteClassCodeDelegate</ref> - i.e. public void XXX(FSM_STT theSTT, StringBuilder retVal);
+            Your method should append your code to retVal.  Pass it as a parameter to this method
+            to register it as a replacement for the default code generator.
+            </summary>
+            <param name="del">.</param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM_CodeBuilder.setOnlyGenerateMissingCode(System.Boolean)">
+            <summary>
+            Call this method passing in 'true' to tell the code generation system to ignore business 
+            object model classes and methods that already exist when it generates code.
+            By default 'ignoreExisting' is true so set to 'falsefor classes and methods 
+            that are missing ).
+            </summary>
+            <param name="ignore">The ignore<see cref="T:System.Boolean"/>.</param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM_CodeBuilder.setWriteOnEntryCode(KJT.Architecture.FiniteStateMachine.WriteStateMethodCodeDelegate)">
+            <summary>
+            Allows developer to override the default code generation for business classes.
+            This section is for the State__onEntry() method that the FSM calls on entry
+            to a state.
+            Create a method in your own code that matches the type signature defined in 
+            <ref>WriteStateMethodCodeDelegate</ref> - i.e. public void XXX(FSM_STT theSTT, 
+            StringBuilder retVal, STT_State state);
+            Your method should append your code to retVal.  Pass it as a parameter to this method
+            to register it as a replacement for the default code generator.
+            </summary>
+            <param name="del">.</param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM_CodeBuilder.setWriteOnExitCode(KJT.Architecture.FiniteStateMachine.WriteStateMethodCodeDelegate)">
+            <summary>
+            Allows developer to override the default code generation for business classes.
+            This section is for the State__onExit() method that the FSM calls on exit
+            from a state.
+            Create a method in your own code that matches the type signature defined in 
+            <ref>WriteStateMethodCodeDelegate</ref> - i.e. public void XXX(FSM_STT theSTT, 
+            StringBuilder retVal, STT_State state);
+            Your method should append your code to retVal.  Pass it as a parameter to this method
+            to register it as a replacement for the default code generator.
+            </summary>
+            <param name="del">.</param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM_CodeBuilder.setWriteTransCode(KJT.Architecture.FiniteStateMachine.WriteTransMethodCodeDelegate)">
+            <summary>
+            Allows developer to override the default code generation for business classes.
+            This section is for the State__eventName() method that the FSM calls on exit
+            from one state to another.
+            Create a method in your own code that matches the type signature defined in 
+            <ref>WriteTransMethodCodeDelegate</ref> - i.e. public void XXX(FSM_STT theSTT, 
+            StringBuilder retVal, STT_State state, STT_Transition trans);
+            Your method should append your code to retVal.  Pass it as a parameter to this method
+            to register it as a replacement for the default code generator.
+            </summary>
+            <param name="del">.</param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM_CodeBuilder.setWriteTransGuardCode(KJT.Architecture.FiniteStateMachine.WriteTransMethodCodeDelegate)">
+            <summary>
+            Allows developer to override the default code generation for business classes.
+            This section is for the State__eventNameGuard() method that the FSM calls when it
+            receives an event to decide whether or not to act upon it.
+            Create a method in your own code that matches the type signature defined in 
+            <ref>WriteTransMethodCodeDelegate</ref> - i.e. public void XXX(FSM_STT theSTT, 
+            StringBuilder retVal, STT_State state, STT_Transition trans);
+            Your method should append your code to retVal.  Pass it as a parameter to this method
+            to register it as a replacement for the default code generator.
+            </summary>
+            <param name="del">.</param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM_CodeBuilder.createOMCodeFromSTT(KJT.Architecture.FiniteStateMachine.FSM_STT)">
+            <summary>
+            The createOMCodeFromSTT.
+            </summary>
+            <param name="theSTT">The theSTT<see cref="T:KJT.Architecture.FiniteStateMachine.FSM_STT"/>.</param>
+            <returns>The <see cref="T:System.String"/>.</returns>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM_CodeBuilder.WriteClassCode(KJT.Architecture.FiniteStateMachine.FSM_STT,System.Text.StringBuilder)">
+            <summary>
+            WriteClassCode() is the default method that writes the code for the class definition if a class
+            that is named in a <ref>FSM_STT</ref> ( by means of its <ref>refClassName</ref> attribute )
+            is missing from the Object Model namespace.  You can override this in the developer environment
+            by writing your own version with the same signature and using the <ref>setWriteClassCode</ref> 
+            method to register it with the code generator.
+            </summary>
+            <param name="theSTT">The theSTT<see cref="T:KJT.Architecture.FiniteStateMachine.FSM_STT"/>.</param>
+            <param name="retVal">The retVal<see cref="T:System.Text.StringBuilder"/>.</param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM_CodeBuilder.WriteOnEntryMethodCode(KJT.Architecture.FiniteStateMachine.FSM_STT,System.Text.StringBuilder,KJT.Architecture.FiniteStateMachine.STT_State)">
+            <summary>
+            WriteOnEntryMethodCode() is the default method that writes the code for the StateName__onEntry()
+            actions of a class if it is missing from the Object Model namespace. You can override this in 
+            the developer environment by writing your own version with the same signature and using the 
+            <ref>setWriteOnEntryMethodCode</ref> method to register it with the code generator.
+            </summary>
+            <param name="theSTT">The theSTT<see cref="T:KJT.Architecture.FiniteStateMachine.FSM_STT"/>.</param>
+            <param name="retVal">The retVal<see cref="T:System.Text.StringBuilder"/>.</param>
+            <param name="state">The state<see cref="T:KJT.Architecture.FiniteStateMachine.STT_State"/>.</param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM_CodeBuilder.WriteTransMethodCode(KJT.Architecture.FiniteStateMachine.FSM_STT,System.Text.StringBuilder,KJT.Architecture.FiniteStateMachine.STT_State,KJT.Architecture.FiniteStateMachine.STT_Transition)">
+            <summary>
+            The WriteTransMethodCode.
+            </summary>
+            <param name="theSTT">The theSTT<see cref="T:KJT.Architecture.FiniteStateMachine.FSM_STT"/>.</param>
+            <param name="retVal">The retVal<see cref="T:System.Text.StringBuilder"/>.</param>
+            <param name="state">The state<see cref="T:KJT.Architecture.FiniteStateMachine.STT_State"/>.</param>
+            <param name="trans">The trans<see cref="T:KJT.Architecture.FiniteStateMachine.STT_Transition"/>.</param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM_CodeBuilder.WriteTransGuardMethodCode(KJT.Architecture.FiniteStateMachine.FSM_STT,System.Text.StringBuilder,KJT.Architecture.FiniteStateMachine.STT_State,KJT.Architecture.FiniteStateMachine.STT_Transition)">
+            <summary>
+            The WriteTransGuardMethodCode.
+            </summary>
+            <param name="theSTT">The theSTT<see cref="T:KJT.Architecture.FiniteStateMachine.FSM_STT"/>.</param>
+            <param name="retVal">The retVal<see cref="T:System.Text.StringBuilder"/>.</param>
+            <param name="state">The state<see cref="T:KJT.Architecture.FiniteStateMachine.STT_State"/>.</param>
+            <param name="trans">The trans<see cref="T:KJT.Architecture.FiniteStateMachine.STT_Transition"/>.</param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM_CodeBuilder.WriteOnExitMethodCode(KJT.Architecture.FiniteStateMachine.FSM_STT,System.Text.StringBuilder,KJT.Architecture.FiniteStateMachine.STT_State)">
+            <summary>
+            The WriteOnExitMethodCode.
+            </summary>
+            <param name="theSTT">The theSTT<see cref="T:KJT.Architecture.FiniteStateMachine.FSM_STT"/>.</param>
+            <param name="retVal">The retVal<see cref="T:System.Text.StringBuilder"/>.</param>
+            <param name="state">The state<see cref="T:KJT.Architecture.FiniteStateMachine.STT_State"/>.</param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM_CodeBuilder.writeCodeToFile(System.String,KJT.Architecture.FiniteStateMachine.FSM_STT)">
+            <summary>
+            The writeCodeToFile.
+            </summary>
+            <param name="theSTT">The theSTT<see cref="T:KJT.Architecture.FiniteStateMachine.FSM_STT"/>.</param>
+        </member>
+        <member name="T:KJT.Architecture.FiniteStateMachine.FSM_Event">
+            <summary>
+            FSM_Event models an event in the run-time of your application, that can be sent
+            as a notification to an object with Finite State Machine ( aka FSM ) behaviour.
+            For example, a timer in your app might create an event named 'timerComplete'.  To send this
+            event to an FSM you will need to create an event and send it - specifying a destination FSM
+            in the FSM_Event and an event name ( in this case - probably 'timerComplete' ).  Usually by
+            calling an FSM or a business objects's takeEvent() method.
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.FSM_Event.eventName">
+            <summary>
+            Defines the eventName.
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.FSM_Event.source">
+            <summary>
+            Defines the source.
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.FSM_Event.destFSM">
+            <summary>
+            Defines the destFSM.
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.FSM_Event.eventDataBundle">
+            <summary>
+            Defines the eventDataBundle.
+            </summary>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM_Event.#ctor(System.Object,System.String,KJT.Architecture.FiniteStateMachine.FSM)">
+            <summary>
+            Initializes a new instance of the <see cref="T:KJT.Architecture.FiniteStateMachine.FSM_Event"/> class.
+            </summary>
+            <param name="source">The source<see cref="T:System.Object"/>.</param>
+            <param name="eventName">The eventName<see cref="T:System.String"/>.</param>
+            <param name="destFSM">The destFSM<see cref="T:KJT.Architecture.FiniteStateMachine.FSM"/>.</param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM_Event.#ctor(System.Object,System.String,KJT.Architecture.FiniteStateMachine.FSM,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Initializes a new instance of the <see cref="T:KJT.Architecture.FiniteStateMachine.FSM_Event"/> class.
+            </summary>
+            <param name="source">The source<see cref="T:System.Object"/>.</param>
+            <param name="eventName">The eventName<see cref="T:System.String"/>.</param>
+            <param name="destFSM">The destFSM<see cref="T:KJT.Architecture.FiniteStateMachine.FSM"/>.</param>
+            <param name="eventDataBundle">The eventDataBundle<see cref="!:Dictionary&lt;String, object&gt;"/>.</param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM_Event.checkEvent(KJT.Architecture.FiniteStateMachine.FSM)">
+            <summary>
+            Check the components of an event for validity - for example
+            does the named event exist in the STT ?  is the dest not null ?
+            TODO should we check the source isn't null too ?
+            </summary>
+            <returns>true if all OK<see cref="T:System.Boolean"/>.</returns>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM_Event.addBundle(System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Adds a Bundle ( implemented as a Dictionary ) of arbitrary attributes to be passed
+            along with an event so that extra information can be processed in the
+            Business class' onEntry() onExit() transition() and transitionGuard() methods.
+            </summary>
+            <param name="bundle">The bundle<see cref="!:Dictionary&lt;String, object&gt;"/>.</param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM_Event.getEventName">
+            <summary>
+            The getEventName.
+            </summary>
+            <returns>The <see cref="T:System.String"/>.</returns>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM_Event.getDestFSM">
+            <summary>
+            The getDestFSM.
+            </summary>
+            <returns>The <see cref="T:KJT.Architecture.FiniteStateMachine.FSM"/>.</returns>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM_Event.getSource">
+            <summary>
+            The getSource.
+            </summary>
+            <returns>The <see cref="T:System.Object"/>.</returns>
+        </member>
+        <member name="T:KJT.Architecture.FiniteStateMachine.FSM_EventProcessor">
+            <summary>
+            This class uses an internal BlockingCollection ( which in turn uses a ConcurrentQueue )
+            to maintain a queue of <ref>FSM_Event</ref>s.  Its constructor also starts a Task using 
+            the BlockingCollection to monitor the queue of FSM_Events and execute them against the right 
+            FSM in a FIFO manner.
+            </summary>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM_EventProcessor.#ctor(System.Int32,System.String)">
+            <summary>
+            This constructor allows the FSM_EventProcessor to set the size of the internal 
+            BlockingCollection and also to know ( for debug purposes only at present ) whether 
+            it 'belongs' to an STT or an FSM and which one called it into being.
+            </summary>
+            <param name="size"></param>
+            <param name="callerName"></param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM_EventProcessor.enQueue(KJT.Architecture.FiniteStateMachine.FSM_Event)">
+            <summary>
+            Puts an FSM_Event on the internal Queue of the BlockingCollection inside the Event Processor.
+            It is a blocking operation and if the collection is full ( see the <ref>size</ref> parameter 
+            of the constructor ) the thread will block.
+            </summary>
+            <param name="evt"></param>
+        </member>
+        <member name="T:KJT.Architecture.FiniteStateMachine.taskAllocation">
+            <summary>
+            Says how tasks will be allocated for FSMs traversing this State Transition Table.
+            Either there is one queue of events for each instance of an FSM ( taskPerInstance )
+            each running on its own Task in parallel - OR we have a single queue of events and a 
+            single OS Task for all the instances of FSM that use this STT.
+            This allows a modicum of control on how many tasks are created.  If you have lots of
+            instances of FSM perhaps you might not want to spawn hundreds of Tasks.  
+            </summary>
+        </member>
+        <member name="T:KJT.Architecture.FiniteStateMachine.FSM_STT">
+             <summary>
+             FSM_STT is the State Transition Table.  It represents the set of
+             states, transitions and events that can be drawn in a state machine
+             diagram.  Represents the behaviour cycle of a state machine object.
+            
+             For each business class that wants FSM-like behaviour there should be
+             an instance of this class ( with its related states and transitions )
+             to describe the behaviour of all instances of that class.
+             By convention we MUST set refClassName of the FSM_STT the same as the
+             corresponding business class whose behaviour it describes, so when we create
+             an FSM_STT for the business class ACTOR, we shall set its refClassName = "ACTOR"
+            
+             The names of the states in the STT will be used to create method names for
+             actions as the FSM traverses its STT.  The system will expect
+             to find these named methods in the class named by the 'refClassName' attribute.
+            
+             For example if the STT has a state named OnStage and the refClassName is 'ACTOR'
+             expect to find the named ACTOR.OnStage__onEntry() in the namespace specified in the
+             nameSpace attribute.
+            
+             </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.FSM_STT.refClassName">
+            <summary>
+            Should reflect the className of the class this STT models
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.FSM_STT.instanceList">
+            <summary>
+            Holds a list of all the instances so they can be found. The String Key is
+            the STT's refClassName
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.FSM_STT.statesList">
+            <summary>
+            Holds a list of the states in this STT, the key is the state's stateName
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.FSM_STT.OMClass">
+            <summary>
+            DERIVED attribute.  A reflection pointer in to the Object model class this STT is for.
+            that class must be in the nameSpace attribute.  Used when we execute methods of that class
+            as the FSM processes events
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.FSM_STT.taskModel">
+            <summary>
+            By default we create a Task in the OS for each Business Class ( i.e. each instance of STT )
+            with all the instances of FSM for that class sharing the same execution thread.
+            But we can change this to one Task for every instance of FSM instead.
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.FSM_STT.eventProcessor">
+            <summary>
+            IF the taskModel is 'taskPerClass' then there will be one event processing queue here
+            which will accept and then process all events posted at instances of the class that this 
+            STT models.  On a single thread.
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.FSM_STT.initialState">
+            <summary>
+            Holds the starting state for this STT and hence for all FSMs
+            that are created using this STT.  Set by the setInitialState() method.
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.FSM_STT.nameSpace">
+            <summary>
+            the namespace that contains the OM classes where the
+            methods for onEntry, onExit and onTransistion live.
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.FSM_STT.deleteWhenEndStateReached">
+            <summary>
+            Indicates that when an end state of this STT is reached ( i.e. there are no further
+            events that can be processed ) we want to delete the instance of FSM that relates
+            to the business object.  Default is false - no FSMs are automatically deleted.
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.FSM_STT.eventsList">
+            <summary>
+            DERIVED list of the the events that this STT can consume.  In effect
+            it is the union of all the events that can transition out of
+            all of the states in this STT. Allows us to instantly reject events
+            if they are sent to the wrong FSM ( and its STT )
+            </summary>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM_STT.setDeleteWhenEndStateReached">
+            <summary>
+            Call this to ensure all FSMs traversing this STT delete themselves when they reach
+            an end state ( i.e. no further events can be processed ).  By default they are not deleted
+            </summary>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM_STT.findByRefClassName(System.String)">
+            <summary>
+            Find an STT for a given OM className
+            </summary>
+            <param name="className"></param>
+            <returns></returns>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM_STT.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Builds a new instance of FSM_STT. Also sets the derived attribute OMClass and
+            adds the new instance to the static instanceList of this class.  IMPORTANT the refClassName
+            nameSpace and version string MUST be exact - they are built into the assembly qualified type name 
+            of the class.  The result should be something like:
+                   'ActorCD.ObjectModel.ACTOR, ActorCD, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+            where ActorCD is the project name, and the namespace is ObjectModel within that project.
+            </summary>
+            <param name="refClassName"> the name of the Object Model class, i.e ACTOR</param>
+            <param name="nameSpace"> the project and subdivision/namespace - for example MyProj.ObjectModel</param>
+            <param name="versionString"> for example 'Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'</param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.FSM_STT.addState(System.String)">
+            <summary>
+            Creates an STT_State linked to this STT and add its to the list of states.
+            Returns the new STT_State.
+            </summary>
+            <param name="stateName"></param>
+            <returns></returns>
+        </member>
+        <member name="T:KJT.Architecture.FiniteStateMachine.STT_State">
+            <summary>
+            Models the states of a State Transistion table.  In this implementation
+            a state has an onEntry method and an onExit Method - these need to be implemented in
+            the class that is referred to by the 'refClassName' of the STT to which a state belongs.
+            IF appropriately named methods exist on the business class ( e.g. Start__onEntry() ), they will
+            be called by the actions of the FSM.
+            For each event that can transition out of this state the 'refClassName' class should have 2
+            further Methods - StateName__eventName() and StateName__EventNameGuard(). If implemented they
+            again will be called to execute actions on the transition and to prevent the transition
+            being executed if the guard method returns false.
+            </summary>
+        </member>
+        <member name="T:KJT.Architecture.FiniteStateMachine.STT_State.ExecInstMethodWithEventDelegate">
+            <summary>
+            A delegate that defines an instance method that takes an FSM_event as a parameter.
+            </summary>
+            <param name="evt">The evt<see cref="T:KJT.Architecture.FiniteStateMachine.FSM_Event"/>.</param>
+        </member>
+        <member name="T:KJT.Architecture.FiniteStateMachine.STT_State.ExecBoolInstMethodWithEventDelegate">
+            <summary>
+            A delegate that defines an instance method that takes an FSM_event as a parameter and returns a bool
+            </summary>
+            <param name="evt">The evt<see cref="T:KJT.Architecture.FiniteStateMachine.FSM_Event"/>.</param>
+            <returns>The <see cref="T:System.Boolean"/>.</returns>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.STT_State.stateName">
+            <summary>
+            The name of the state - Needs only to be unique within the context
+            of the STT to which this State belongs.. so different STTs can both contains a state 
+            named 'Start' if necessary..
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.STT_State.stt">
+            <summary>
+            Models the the STT this State is a part of - States can only be in one STT..
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.STT_State.allowedTransitions">
+            <summary>
+            List ( as a Dictionary ) of the allowed transitions out of this state.
+            events to be processed must be unique within the context of a State, as we can't  
+            do 2 things at once... so the Dictionary uses the eventName as a Key..
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.STT_State.methodForOnEntry">
+            <summary>
+            DERIVED attribute - a reflection pointer to the method in an Object Model class that matches
+            this state's STT's classRefName and implements actions when an FSM transitions INTO this state.
+            If the OM does not contain a method with the right name in the right class ( e.g. ACTOR.OnStage__OnEntry() )
+            then a default method is called which merely notifies the entry into the state in a debug message...
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.STT_State.methodForOnExit">
+            <summary>
+            DERIVED attribute - a reflection pointer to the method in an Object Model class that matches
+            this state's STT's classRefName and implements actions when an FSM transitions OUT of this state.
+            If the OM does not contain a method with the right name in the right class ( e.g. ACTOR.OnStage__OnExit() )
+            then a default method is called which merely notifies the exit from the state in a debug message...
+            </summary>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.STT_State.getIsFinalState">
+            <summary>
+            DERIVED atribute.  Looks at the list of transistions OUT of a state
+            if there are none it must be a final state.
+            </summary>
+            <returns>.</returns>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.STT_State.addTransition(System.String,KJT.Architecture.FiniteStateMachine.STT_State)">
+            <summary>
+            Adds an STT_Transition to this State.  Also adds the name of the transition to the
+            eventList of the STT to which this State is attached.
+            </summary>
+            <param name="eventName">.</param>
+            <param name="toState">.</param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.STT_State.#ctor(KJT.Architecture.FiniteStateMachine.FSM_STT,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:KJT.Architecture.FiniteStateMachine.STT_State"/> class.
+            </summary>
+            <param name="fsmSTT">.</param>
+            <param name="stateName">.</param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.STT_State.testEvent(KJT.Architecture.FiniteStateMachine.FSM_Event)">
+            <summary>
+            Accepts the event BUT DOES NOT process it.
+            returns the next State that would be reached if it were processed.
+            NOT SURE when this would be used .
+            </summary>
+            <param name="evt">.</param>
+            <returns>.</returns>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.STT_State.takeEvent(KJT.Architecture.FiniteStateMachine.FSM_Event)">
+            <summary>
+            Accepts the event and processes it.
+            returns the next State and 'this' if it can't make the transition.
+            As a by-product calls the necessary StateName__onExit(), StateName__eventName()
+            StateName__OnEntry() and StateName__eventNameGuard() methods if they exist.
+            in the class that the STT refers to in its 'refClassName' attribute.
+            </summary>
+            <param name="evt">.</param>
+            <returns>.</returns>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.STT_State.execBoolMethodWithEvent(System.Reflection.MethodInfo,KJT.Architecture.FiniteStateMachine.FSM_Event)">
+            <summary>
+            Uses delegates to execute the method that 'method' points at passing the event evt
+            for the Object Model instance that the destination FSM is bound to.
+            </summary>
+            <param name="method">The methodInfo<see cref="T:System.Reflection.MethodInfo"/>.</param>
+            <param name="evt">The evt<see cref="T:KJT.Architecture.FiniteStateMachine.FSM_Event"/>.</param>
+            <returns>The <see cref="T:System.Boolean"/>.</returns>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.STT_State.getStateName">
+            <summary>
+            gets the state name.
+            </summary>
+            <returns>The <see cref="T:System.String"/>.</returns>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.STT_State.onEntry(KJT.Architecture.FiniteStateMachine.FSM_Event)">
+            <summary>
+            Default onEntry() method for states.  If the business object model for an STT does not
+            contain a method to implement the onEntry() actions, thsi is called instead and posts
+            a debug message.
+            </summary>
+            <param name="evt">The evt<see cref="T:KJT.Architecture.FiniteStateMachine.FSM_Event"/>.</param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.STT_State.onExit(KJT.Architecture.FiniteStateMachine.FSM_Event)">
+            <summary>
+            Default onExit() method for states.  If the business object model for an STT does not
+            contain a method to implement the onExit() actions, thsi is called instead and posts
+            a debug message.
+            </summary>
+            <param name="evt">The evt<see cref="T:KJT.Architecture.FiniteStateMachine.FSM_Event"/>.</param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.STT_State.executeTransition(KJT.Architecture.FiniteStateMachine.FSM_Event,KJT.Architecture.FiniteStateMachine.STT_Transition)">
+            <summary>
+            Execites the methods associated with traversing a transition from one state to another.
+            </summary>
+            <param name="evt">The evt<see cref="T:KJT.Architecture.FiniteStateMachine.FSM_Event"/>.</param>
+            <param name="trans">The trans<see cref="T:KJT.Architecture.FiniteStateMachine.STT_Transition"/>.</param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.STT_State.setReflectionVariables">
+            <summary>
+            Sets the reflection variables like the methodInfo pointers for this State.
+            </summary>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.STT_State.execInstMethodWithEvent(System.Reflection.MethodInfo,KJT.Architecture.FiniteStateMachine.FSM_Event)">
+            <summary>
+            Executes a method, passing an event, for the instance defined in the destFSM registered Instance
+            </summary>
+            <param name="method">The methodInfo pointing to the method in the Object Model class<see cref="T:System.Reflection.MethodInfo"/>.</param>
+            <param name="evt">The FSM_Event to be processed<see cref="T:KJT.Architecture.FiniteStateMachine.FSM_Event"/>.</param>
+        </member>
+        <member name="T:KJT.Architecture.FiniteStateMachine.STT_Transition">
+            <summary>
+            Represents a transition between two states due to an event occurring.
+            <ref>STT_Transition</ref>s belong to <ref>FSM_State</ref>s in the <ref>FSM_STT</ref>.
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.STT_Transition.instanceName">
+            <summary>
+            Defines the instanceName.
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.STT_Transition.fromState">
+            <summary>
+            Defines the fromState.
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.STT_Transition.toState">
+            <summary>
+            Defines the toState.
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.STT_Transition.eventName">
+            <summary>
+            Defines the eventName.
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.STT_Transition.methodForTransition">
+            <summary>
+            Defines the methodForTransition.
+            </summary>
+        </member>
+        <member name="F:KJT.Architecture.FiniteStateMachine.STT_Transition.methodForGuard">
+            <summary>
+            Defines the methodForGuard.
+            </summary>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.STT_Transition.#ctor(KJT.Architecture.FiniteStateMachine.STT_State,System.String,KJT.Architecture.FiniteStateMachine.STT_State)">
+            <summary>
+            Initializes a new instance of the <see cref="T:KJT.Architecture.FiniteStateMachine.STT_Transition"/> class.
+            </summary>
+            <param name="fromState">The fromState<see cref="T:KJT.Architecture.FiniteStateMachine.STT_State"/>.</param>
+            <param name="eventName">The eventName<see cref="T:System.String"/>.</param>
+            <param name="toState">The toState<see cref="T:KJT.Architecture.FiniteStateMachine.STT_State"/>.</param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.STT_Transition.setReflectionVariables">
+            <summary>
+            The setReflectionVariables.
+            </summary>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.STT_Transition.onTransition(KJT.Architecture.FiniteStateMachine.FSM_Event)">
+            <summary>
+            Default onTransition method.  s that implements a transition/guard must be named the same as it 
+             and be in the class that implements the 'fromState' value in the matching registeredInstance
+            </summary>
+            <param name="evt">The evt<see cref="T:KJT.Architecture.FiniteStateMachine.FSM_Event"/>.</param>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.STT_Transition.getInstanceName">
+            <summary>
+            Returns the full name of the transition comprising the starting state, event and end state
+            e.g. OnStage__audienceBoo__Exit.
+            </summary>
+            <returns>String.</returns>
+        </member>
+        <member name="M:KJT.Architecture.FiniteStateMachine.STT_Transition.getEventName">
+            <summary>
+            Returns just the name of the FSM_Event that causes this transition.
+            </summary>
+            <returns>String.</returns>
+        </member>
+    </members>
+</doc>
