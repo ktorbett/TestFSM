@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.Text;
 using System.Windows.Forms;
-using TestFSM.FiniteStateMachine;
+using KJT.Architecture.FiniteStateMachine;
 using TestFSM.ObjectModel;
 
 namespace TestFSM {
@@ -13,7 +13,8 @@ namespace TestFSM {
 
 
         private void loadSTTsButton_Click(object sender, EventArgs e) {
-            FSM_STT mySTTCD = new FSM_STT("CDPLAYER", "TestFSM.ObjectModel");
+            FSM_STT mySTTCD = new FSM_STT("CDPLAYER", "TestFSM.ObjectModel", 
+                                       "Version=1.0.0.0, Culture=neutral, PublicKeyToken=null");
 
             STT_State beginState = mySTTCD.addState("Begin");
             STT_State playState = mySTTCD.addState("Playing");
@@ -34,8 +35,9 @@ namespace TestFSM {
             Debug.WriteLine("FSMSTT create complete " + mySTTCD.getRefClassName());
 
             // ACTOR
-
-            FSM_STT mySTTACTOR = new FSM_STT("ACTOR", "TestFSM.ObjectModel");
+    
+            FSM_STT mySTTACTOR = new FSM_STT("ACTOR", "TestFSM.ObjectModel",
+                                            "Version=1.0.0.0, Culture=neutral, PublicKeyToken=null");
 
             STT_State inWingsState = mySTTACTOR.addState("InWings");
             STT_State onStageState = mySTTACTOR.addState("OnStage");
@@ -75,9 +77,11 @@ namespace TestFSM {
         private void initialiseSTTsListBox() {
             // need handle on events in the list
             foreach(FSM_STT item in FSM_STT.getInstanceList().Values) {
-                this.listOfSTTsListBox.Items.Add(item.refClassName);
-                this.listBox1.Items.Add(item.refClassName);
-                this.listBox2.Items.Add(item.refClassName);
+
+                string refClassName = item.getRefClassName();
+                this.listOfSTTsListBox.Items.Add(refClassName);
+                this.listBox1.Items.Add(refClassName);
+                this.listBox2.Items.Add(refClassName);
             }
         }
 
@@ -112,6 +116,8 @@ namespace TestFSM {
                 new CDPLAYER("cdplayer1", mySTTCD, FSMType.synch);
                 new CDPLAYER("cdplayer2", mySTTCD, FSMType.synch);
                 CDPLAYER c3 = new CDPLAYER("cdplayer3", mySTTCD, FSMType.synch);
+                FSM_Event newEv = new FSM_Event(this, CDPLAYER.Events.startPlaying, c3.getFSM());
+                CDPLAYER.postEvent(newEv);
 
                 FSM_STT mySTTACTOR = FSM_STT.findByRefClassName("ACTOR");
                 ACTOR a1 = new ACTOR("actor1", mySTTACTOR, FSMType.asynch);
@@ -178,11 +184,11 @@ namespace TestFSM {
 
         private void WriteDifferentOnEntryMethodCode(FSM_STT theSTT, StringBuilder retVal, STT_State state) {
             retVal.Append("      // Method for Entry XXXXXX\n\n");
-            retVal.Append("      public void ").Append(state.stateName);
+            retVal.Append("      public void ").Append(state.getStateName());
             retVal.Append("__onEntry(FSM_Event evt)\n");
             retVal.Append("      {\n");
             retVal.Append("         Debug.WriteLine( \"");
-            retVal.Append(theSTT.refClassName).Append(".").Append(state.stateName);
+            retVal.Append(theSTT.getRefClassName()).Append(".").Append(state.getStateName());
             retVal.Append("__onEntry() XXXXXXXXXExecuting in response to event \" + evt.getEventName());\n");
             if(theSTT.getDeleteWhenEndStateReached() && state.getIsFinalState()) {
                 retVal.Append("         //  XXXXXXXXXXXdelete references as this is an end state and the STT demands it\n");

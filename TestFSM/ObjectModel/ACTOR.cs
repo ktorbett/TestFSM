@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using TestFSM.FiniteStateMachine;
+using KJT.Architecture.FiniteStateMachine;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace TestFSM.ObjectModel {
 
@@ -62,8 +63,8 @@ namespace TestFSM.ObjectModel {
         }
 
         // Processes an event.  Passes it on to the FSM
-        public void takeEvent(FSM_Event evt) {
-            this.fsm.takeEvent(evt);
+        public static void postEvent(FSM_Event evt) {
+            FSM.postEvent(evt);
         }
 
         // Implementation of State InWings
@@ -78,6 +79,7 @@ namespace TestFSM.ObjectModel {
 
         public void InWings__onExit(FSM_Event evt) {
             Debug.WriteLine("ACTOR.InWings__onExit() Executing in response to event " + evt.getEventName());
+
         }
 
         // Method for Transition InWings__receiveCue__OnStage

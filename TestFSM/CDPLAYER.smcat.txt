@@ -1,0 +1,19 @@
+#FSM:CDPLAYER
+initial,
+"media player off",
+stopped :
+   entry/startup_stuff
+   exit/speed_hardware,
+playing : entry/start_play,
+paused : entry/pause_play;
+
+stopped => playing : [up_to_speed]play;
+playing => stopped : stop/slow_hardware;
+playing => paused  : pause;
+paused  => playing : pause;
+paused  => stopped : stop/slow_hardware;
+initial => "media player off";
+"media player off" => stopped : power_on;
+stopped => "media player off" : power_off;
+playing => "media player off" : power_off;
+paused => "media player off" : power_off;

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using TestFSM.FiniteStateMachine;
+using KJT.Architecture.FiniteStateMachine;
 using System.Diagnostics;
 
 namespace TestFSM.ObjectModel {
@@ -55,8 +55,8 @@ namespace TestFSM.ObjectModel {
         }
 
         // Processes an event.  Passes it on to the FSM
-        public void takeEvent(FSM_Event evt) {
-            this.fsm.takeEvent(evt);
+        public static void postEvent(FSM_Event evt) {
+            FSM.postEvent(evt);
         }
 
         // Implementation of State Begin
@@ -77,6 +77,7 @@ namespace TestFSM.ObjectModel {
 
         public void Begin__startPlaying(FSM_Event evt) {
             Debug.WriteLine("CDPLAYER.Begin__startPlaying() Executing in response to event " + evt.getEventName());
+        
         }
 
         // GuardMethod for transition Begin__startPlaying__Playing
