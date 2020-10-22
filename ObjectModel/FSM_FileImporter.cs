@@ -9,18 +9,136 @@ using KJT.Architecture.FiniteStateMachine;
 using System.Diagnostics;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Linq;
+using System.Drawing;
+using System.Windows.Forms;
+using System.Resources;
 
 namespace TestFSM {
     class FSM_FileImporter {
 
+        class INNER_TRANS {
+            internal string transPart;
+            internal string fromStateName;
+            internal STT_State fromState;
+            internal string toStateName;
+            internal STT_State toState;
+            internal string eventName;
+            internal string transAnno;
+            internal string guardAnno;
+
+            internal void parseTransitionString( string s) {
+                string[] aStr = s.Split(":");
+                switch(aStr.Length) {
+
+                    case 1:
+                        // no ':' so only transParts present
+                        this.transPart = aStr[0].Trim().Replace("\"", "");
+                        break;
+
+                    case 2:
+                        // we have transition and event name with a non ':' separator
+                        string[] bStr = aStr[1].Split(' ', '/', '\\', ']');
+                        if(bStr.Length > 1) { // we have a split
+
+                            if(Regex.IsMatch(aStr[1], @"\s*\[.*\].*")) {// check if aStr[1] contains []
+                                this.eventName = bStr[1].Trim().Replace("\"", ""); // may be empty ?
+                                this.guardAnno = bStr[0].Trim().Replace("\"", "") + "]";
+                            } else {
+                                this.eventName = bStr[0].Trim().Replace("\"", ""); // may be empty ?
+                                this.transAnno = bStr[0].Trim().Replace("\"", "");
+                            }
+
+                            this.transPart = aStr[0].Trim().Replace("\"", "");
+                            // ok normal
+
+                        } else { // just an eventname ...
+
+                            this.transAnno = "";// may be empty ?
+                            this.eventName = bStr[0].Trim().Replace("\"", "");
+                            this.transPart = aStr[0].Trim().Replace("\"", "");
+                        }
+                        break;
+
+                    case 3:
+                        // colon is separator for event and action?
+                        this.transAnno = aStr[2].Trim().Replace("\"", "");
+                        this.eventName = aStr[1].Trim().Replace("\"", "");
+                        this.transPart = aStr[0].Trim().Replace("\"", "");
+
+                        break;
+
+                    default:
+                        // ???
+                        Debug.WriteLine("FSM_FileImporter.AddTransitionsFromArray() " +
+                            "failure parsing a transition string ' " + s + " '");
+                        break;
+                }
+                // then in transParts, the two events are divided by a two
+                // character string that could be -> >> => == << <- <= 
+                // is this a job for regex ?
+                this.ExtractFromAndToState();
+
+                // at this point we should be ready to add transitions
+                // but for the initial state, set the initialstate of the stt instead
+                if( this.fromStateName == "initial") {
+                    theSTT.setInitialState(this.toState);
+                } else if ( this.fromState != null && this.toState != null && this.eventName != null ){
+                    this.fromState.addTransition(this.eventName, this.toState);
+                }
+
+            }
+
+            private void ExtractFromAndToState() {
+                // start with this.transPart.  parse it...
+                // using ([A-Za-z ]+)((?:=>)|(?:->)|(?:==)|(?:>>)|(?:<-)|(?:<=)|(?:<<))([A-Za-z ]+)
+                // or (.+)((?:=>)|(?:->)|(?:==)|(?:>>)|(?:<-)|(?:<=)|(?:<<))(.+)
+                string pattern = @"(.+)((?:=>)|(?:->)|(?:==)|(?:>>)|(?:<-)|(?:<=)|(?:<<))(.+)";
+
+                Match match = Regex.Match(this.transPart, pattern);
+                if ( match.Success ) {
+
+                    // check the direction of the transition
+                    string dir = match.Groups[2].Value;
+                    if( dir == "->" || dir == "=>" || dir == ">>" | dir == "==" ) {
+                        this.fromStateName = match.Groups[1].Value;
+                        this.toStateName = match.Groups[3].Value;
+                    } else {
+                        this.fromStateName = match.Groups[3].Value;
+                        this.toStateName = match.Groups[1].Value;
+                    }
+
+                    this.fromState = findOrCreateStateNameInSTT( theSTT, fromStateName);
+                    this.toState = findOrCreateStateNameInSTT(theSTT, toStateName);
+                    
+                                        
+                } else {
+                    Debug.WriteLine("INNER_TRANS.ExtractFromAndTostate() error parsing transPart string " + this.transPart);
+                }
+            }
+        }
+
 
         static FSM_STT theSTT = null;
+
+        public static STT_State findOrCreateStateNameInSTT( FSM_STT theSTT, string stateName) {
+            STT_State retVal = null;
+
+            foreach ( STT_State state in theSTT.getStatesList()) {
+                if ( state.getStateName() == stateName) {
+                    retVal = state;
+                }
+            }
+            if ( retVal == null) {
+                // create it - 'cos it's mentioned in a transition but not in the state section
+                retVal = theSTT.addState(stateName);
+            }
+
+            return retVal;
+        }
 
         public static void SMCatImport( string fileName ) { // probably need an array of options as well
             // 
             string[] inputLines = File.ReadAllLines(fileName);
-
-            //string inputString = File.ReadAllText(fileName);
 
             StringCollection strColHead = new StringCollection();
             StringCollection strColBody = new StringCollection();
@@ -29,9 +147,8 @@ namespace TestFSM {
 
             theSTT = CreateSTT(strColHead);
 
-            ExtractAndAddStatesToSTTStates( FSM_FileImporter.theSTT, strColBody);
-
-            
+            ExtractAndAddStatesToSTT( FSM_FileImporter.theSTT, strColBody);
+                                 
         }
 
         private static FSM_STT CreateSTT(StringCollection strColHead) {
@@ -68,9 +185,7 @@ namespace TestFSM {
                     }
                 }
 
-                
-
-            }
+             }
 
             // check we have enough
             if(STT_nameSpace == "" || STT_refClassName == "" | STT_vctString == "") {
@@ -80,27 +195,7 @@ namespace TestFSM {
             return new FSM_STT(STT_refClassName, STT_nameSpace, STT_vctString);
         }
 
-        private static string RemoveCRExceptWithinColonComma( string s) {
-            
-
-                StringBuilder newValue = new StringBuilder("");
-                string[] sets = s.Split(':',',' );
-                for(int i = 0; i < sets.Length; i++) {
-                    if(i % 2 == 0)
-                        // even ones are outside the pair
-                        newValue.Append(sets[i].Replace("\r\n", ""));
-                    else
-                        // and the odd ones are in a :, pair
-                        newValue.Append(":" + sets[i] + ",");
-                }
-
-                // final %
-                return newValue.ToString();  // was thinking of adding trim() on the end, 
-                                             //but it deletes \r\n we WANT that are inside a state comment between 
-            
-        }
-
-        private static void ExtractAndAddStatesToSTTStates( FSM_STT theSTT, StringCollection bodyText) {
+        private static void ExtractAndAddStatesToSTT( FSM_STT theSTT, StringCollection bodyText) {
 
             string noUnwantedSpaces = ""; 
             StringCollection tmp = new StringCollection();
@@ -122,15 +217,36 @@ namespace TestFSM {
             // So we shall further split the states up by parsing between commas. ( use Split () )
 
             string[] states = statesAndTransitions[0].Split(",");
-
+            
             AddStatesFromArray( theSTT, states);
 
             string[] transitions = new string[statesAndTransitions.Length -1 ];
 
             transitions = statesAndTransitions[1..statesAndTransitions.Length];
 
+            // now make a list of transitions
+            // them match them with the States we have
+            // and any left over, create new States
+
+            AddTransitionsFromArray(transitions);
         }
 
+        private static void AddTransitionsFromArray(string[] transitions) {
+            //
+
+            List<INNER_TRANS> iTransList = new List<INNER_TRANS>(transitions.Length);
+                
+            int count = 0;
+            foreach( string s in transitions) {
+                // pick out the parts to the left and right 
+                // the rightmost part after the ':' is the event name
+                iTransList.Add(new INNER_TRANS());
+                iTransList[count].parseTransitionString( s);
+                count++;
+            }
+        }
+
+      
         private static void AddStatesFromArray( FSM_STT theSTT, string[] states) {
 
             foreach ( string s in states ) {

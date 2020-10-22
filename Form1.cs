@@ -271,8 +271,8 @@ namespace TestFSM {
                     FSM_FileImporter.SMCatImport( fbd.FileName);
                 }
 
-                //then call fileImporter
-                
+                this.initialiseSTTsListBox(); // list of STTs loaded in memory
+
             }
         }
     }
