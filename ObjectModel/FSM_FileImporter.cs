@@ -24,21 +24,14 @@ namespace TestFSM {
 
             StringCollection strColHead = new StringCollection();
             StringCollection strColBody = new StringCollection();
-            StringCollection strColStates = null;
-            StringCollection strColTransitions = null;
 
             SplitHeaderAndBody(inputLines, strColHead, strColBody);
 
             theSTT = CreateSTT(strColHead);
 
-            strColStates = ExtractStates(strColBody);
+            ExtractAndAddStatesToSTTStates( FSM_FileImporter.theSTT, strColBody);
 
-
-            //  Now i think we need create single string from strcolstates -
-            //  actually it is still in an internmediate states.   we need to split it into ; separated items
-            // and probably a single string BUT we want to preserve the crlf ( \r\n) IF they are in between a : and a ,
-            // now that might be a job for a regex ....
-
+            
         }
 
         private static FSM_STT CreateSTT(StringCollection strColHead) {
@@ -107,23 +100,20 @@ namespace TestFSM {
             
         }
 
-        private static StringCollection ExtractStates(StringCollection bodyText) {
+        private static void ExtractAndAddStatesToSTTStates( FSM_STT theSTT, StringCollection bodyText) {
 
-
-            string noUnwantedSpaces = "";  // this has to match a 
-            StringCollection retVal = new StringCollection();
-            // what happens in here ....
+            string noUnwantedSpaces = ""; 
+            StringCollection tmp = new StringCollection();
+            // what happens in here ....  replace spaces but not inside ""
             foreach ( string s in bodyText) {
-                retVal.Add( ReplaceSpacesOutsideStrings(s));
+                tmp.Add( ReplaceSpacesOutsideStrings(s));
             }
             // then make the string collection into a single string
-            string[] strArray = new string[retVal.Count];
-            retVal.CopyTo( strArray,0);
+            // so we can split it
+            string[] strArray = new string[tmp.Count];
+            tmp.CopyTo( strArray,0);
             noUnwantedSpaces = String.Concat(strArray);
-
-
-            //possible going wrong here in removeCR exceptwithinColonComma... so try without.
-            //string preparedForStateParse = RemoveCRExceptWithinColonComma(noUnwantedSpaces);
+            
             string[] statesAndTransitions = noUnwantedSpaces.Split(";");
 
             // at this stage statesAndTransitions[0] is the list of states and their comment strings like onEntry exit etc. 
@@ -133,13 +123,62 @@ namespace TestFSM {
 
             string[] states = statesAndTransitions[0].Split(",");
 
+            AddStatesFromArray( theSTT, states);
+
             string[] transitions = new string[statesAndTransitions.Length -1 ];
 
             transitions = statesAndTransitions[1..statesAndTransitions.Length];
 
-            return retVal;
         }
-        
+
+        private static void AddStatesFromArray( FSM_STT theSTT, string[] states) {
+
+            foreach ( string s in states ) {
+
+                string[] strArray = s.Split(":");
+                string annotations = "";
+                string stateName = strArray[0].Trim().Replace("\"", "");
+                if(strArray.Length > 1) {
+                    annotations = strArray[1].Trim();
+                }
+                if(stateName != "initial" && stateName != "final") {
+
+                    // TODO - when we implement join fork and decision
+                    // here is where we check the first char of the stateName
+                    // and create the sub-class instance instead SST_State_Join
+                    // STT_State_Fork or STT_State_Decision.   
+                    //
+
+                    STT_State state = theSTT.addState(stateName);
+
+                    //Now if there is annotation set it up.
+
+                    if( annotations !="" ) {
+
+                        // it might have a split on \r\n then use onEntry()/:entry():onEntry:entry
+                        // and so on....   maybe this is a regex job. ?
+                        // these ought to pull out all the options for onEntry onExit etc.
+                        // (?:on)?[Ee]ntry(?:\(\))?[\/\\: ](.*)
+                        //(?:on)?[Ee]xit(?:\(\))?[\/\\: ](.*)
+
+                        Match match = null;
+                        match = Regex.Match(annotations, @"(?:on)?[Ee]ntry(?:\(\))?[\/\\: ](.*)");
+                        string onEntryAnn = match.Groups[1].Value.Trim();
+                        if( onEntryAnn != "" && onEntryAnn != null) {
+                            state.setOnEntryAnnotation("// implement onEntry() action hint: " + onEntryAnn);
+                        }
+                        match = Regex.Match(annotations, @"(?:on)?[Ee]xit(?:\(\))?[\/\\: ](.*)");
+                        string onExitAnn = match.Groups[1].Value.Trim();
+                        if(onExitAnn != "" && onExitAnn != null) {
+                            state.setOnExitAnnotation("// implement onExit() action hint: " + onExitAnn);
+                        }
+
+                    }
+
+                }
+            }
+        }
+
         private static string ReplaceSpacesOutsideStrings(string s) {
             
             StringBuilder newValue = new StringBuilder("");
@@ -153,9 +192,9 @@ namespace TestFSM {
                     newValue.Append("\"" + sets[i] + "\"");
             }
 
-            // final %
+            // final " ?
             return newValue.ToString();  // was thinking of adding trim() on the end, 
-            //but it deletes \r\n we WANT that are inside a state comment between 
+            //but it deletes \r\n we WANT that are inside a state comment between : and ;
         }
 
         private static void SplitHeaderAndBody(string[] strArray, StringCollection strColHead, StringCollection strColBody ) {
