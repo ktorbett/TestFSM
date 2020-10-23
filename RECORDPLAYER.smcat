@@ -5,7 +5,7 @@
 initial, 
 "Player Off", Stopped :   entry/startup_stuff
    onExit/start_turntable, 
-^IsItDone: "is it done", Playing : entry/start_play,
+IsItDone: "is it done", Playing : entry/start_play,
 Paused : onEntry/raise_needle; 
 initial => "Player Off";
 Stopped => Playing : [up_to_speed] play;
@@ -13,8 +13,8 @@ Playing == Stopped : stop/stop_turntable;
 Playing >> Paused  : pause;
 "Paused"  -> Playing : pause; Paused  => Stopped : stop/stop_turntable; "Player Off" => Stopped : powerOn; Stopped >> "Player Off" : powerOff;    
 Playing => "Player Off" : powerOff;
-^IsItDone <- Paused : powerOff;
-^IsItDone >> "Player Off" : yes;
-"Stopped" << ^IsItDone : no;
+IsItDone <- Paused : powerOff;
+IsItDone >> "Player Off" : yes;
+"Stopped" << IsItDone : no;
 
 
