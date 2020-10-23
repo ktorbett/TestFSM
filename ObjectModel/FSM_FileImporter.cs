@@ -127,9 +127,9 @@ namespace TestFSM {
         }
 
 
-        static FSM_STT theSTT = null;
+        internal static FSM_STT theSTT = null;
 
-        public static STT_State findOrCreateStateNameInSTT( FSM_STT theSTT, string stateName) {
+        internal static STT_State findOrCreateStateNameInSTT( FSM_STT theSTT, string stateName) {
             STT_State retVal = null;
 
             foreach ( STT_State state in theSTT.getStatesList()) {
