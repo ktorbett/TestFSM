@@ -70,7 +70,7 @@
             // eventListComboBox
             // 
             this.eventListComboBox.FormattingEnabled = true;
-            this.eventListComboBox.Location = new System.Drawing.Point(480, 82);
+            this.eventListComboBox.Location = new System.Drawing.Point(680, 77);
             this.eventListComboBox.Name = "eventListComboBox";
             this.eventListComboBox.Size = new System.Drawing.Size(205, 33);
             this.eventListComboBox.TabIndex = 1;
@@ -78,7 +78,7 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(480, 37);
+            this.label1.Location = new System.Drawing.Point(680, 37);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(130, 25);
             this.label1.TabIndex = 2;
@@ -109,7 +109,7 @@
             this.listOfInstancesListBox.ItemHeight = 25;
             this.listOfInstancesListBox.Location = new System.Drawing.Point(233, 77);
             this.listOfInstancesListBox.Name = "listOfInstancesListBox";
-            this.listOfInstancesListBox.Size = new System.Drawing.Size(216, 204);
+            this.listOfInstancesListBox.Size = new System.Drawing.Size(358, 204);
             this.listOfInstancesListBox.TabIndex = 5;
             this.listOfInstancesListBox.SelectedIndexChanged += new System.EventHandler(this.listOfInstancesListBox_SelectedIndexChanged);
             // 
@@ -152,7 +152,7 @@
             // 
             // selectedInstanceStateTextBox
             // 
-            this.selectedInstanceStateTextBox.Location = new System.Drawing.Point(735, 183);
+            this.selectedInstanceStateTextBox.Location = new System.Drawing.Point(735, 250);
             this.selectedInstanceStateTextBox.Name = "selectedInstanceStateTextBox";
             this.selectedInstanceStateTextBox.Size = new System.Drawing.Size(150, 31);
             this.selectedInstanceStateTextBox.TabIndex = 9;
@@ -160,7 +160,7 @@
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(693, 151);
+            this.label4.Location = new System.Drawing.Point(693, 208);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(192, 25);
             this.label4.TabIndex = 8;
@@ -168,7 +168,7 @@
             // 
             // sendEventButton
             // 
-            this.sendEventButton.Location = new System.Drawing.Point(489, 143);
+            this.sendEventButton.Location = new System.Drawing.Point(764, 134);
             this.sendEventButton.Name = "sendEventButton";
             this.sendEventButton.Size = new System.Drawing.Size(121, 41);
             this.sendEventButton.TabIndex = 7;
@@ -187,7 +187,7 @@
             // 
             // writeCodeToFileButton
             // 
-            this.writeCodeToFileButton.Location = new System.Drawing.Point(272, 263);
+            this.writeCodeToFileButton.Location = new System.Drawing.Point(252, 265);
             this.writeCodeToFileButton.Name = "writeCodeToFileButton";
             this.writeCodeToFileButton.Size = new System.Drawing.Size(197, 34);
             this.writeCodeToFileButton.TabIndex = 8;

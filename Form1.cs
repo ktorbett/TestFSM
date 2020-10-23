@@ -76,6 +76,9 @@ namespace TestFSM {
 
         private void initialiseSTTsListBox() {
             // need handle on events in the list
+            this.listOfSTTsListBox.Items.Clear();
+            this.listBox1.Items.Clear();
+            this.listBox2.Items.Clear();
             foreach(FSM_STT item in FSM_STT.getInstanceList().Values) {
 
                 string refClassName = item.getRefClassName();
@@ -124,6 +127,9 @@ namespace TestFSM {
                 ACTOR a2 = new ACTOR("actor2", mySTTACTOR, FSMType.asynch);
                 ACTOR a3 = new ACTOR("actor3", mySTTACTOR, FSMType.asynch);
                 ACTOR a4 = new ACTOR("actor4", mySTTACTOR, FSMType.asynch);
+                FSM_STT mySTTRECORDPLAYER = FSM_STT.findByRefClassName("RECORDPLAYER");
+                RECORDPLAYER r1 = new RECORDPLAYER("recordplayer1", mySTTRECORDPLAYER, FSMType.synch);
+
 
                 
             } catch(Exception ex) {

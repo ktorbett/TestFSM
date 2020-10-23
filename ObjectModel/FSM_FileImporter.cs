@@ -26,7 +26,7 @@ namespace TestFSM {
             internal string transAnno;
             internal string guardAnno;
 
-            internal void parseTransitionString( string s) {
+            internal void parseTransitionString( FSM_STT theSTT, string s) {
                 string[] aStr = s.Split(":");
                 switch(aStr.Length) {
 
@@ -41,11 +41,12 @@ namespace TestFSM {
                         if(bStr.Length > 1) { // we have a split
 
                             if(Regex.IsMatch(aStr[1], @"\s*\[.*\].*")) {// check if aStr[1] contains []
+                                            // in which case we have an event guard
                                 this.eventName = bStr[1].Trim().Replace("\"", ""); // may be empty ?
                                 this.guardAnno = bStr[0].Trim().Replace("\"", "") + "]";
                             } else {
                                 this.eventName = bStr[0].Trim().Replace("\"", ""); // may be empty ?
-                                this.transAnno = bStr[0].Trim().Replace("\"", "");
+                                this.transAnno = bStr[1].Trim().Replace("\"", "");
                             }
 
                             this.transPart = aStr[0].Trim().Replace("\"", "");
@@ -76,7 +77,7 @@ namespace TestFSM {
                 // then in transParts, the two events are divided by a two
                 // character string that could be -> >> => == << <- <= 
                 // is this a job for regex ?
-                this.ExtractFromAndToState();
+                this.ExtractFromAndToState( theSTT);
 
                 // at this point we should be ready to add transitions
                 // but for the initial state, set the initialstate of the stt instead
@@ -84,11 +85,19 @@ namespace TestFSM {
                     theSTT.setInitialState(this.toState);
                 } else if ( this.fromState != null && this.toState != null && this.eventName != null ){
                     this.fromState.addTransition(this.eventName, this.toState);
+                    // add the annotations ...
+                    STT_Transition trans = null;
+                    
+                    fromState.getAllowedTransitions().TryGetValue(this.eventName, out trans);
+                    if ( trans != null) {
+                        trans.setGuardAnnotation( this.guardAnno);
+                        trans.setTransitionAnnotation( this.transAnno);
+                    }
                 }
 
             }
 
-            private void ExtractFromAndToState() {
+            private void ExtractFromAndToState( FSM_STT theSTT) {
                 // start with this.transPart.  parse it...
                 // using ([A-Za-z ]+)((?:=>)|(?:->)|(?:==)|(?:>>)|(?:<-)|(?:<=)|(?:<<))([A-Za-z ]+)
                 // or (.+)((?:=>)|(?:->)|(?:==)|(?:>>)|(?:<-)|(?:<=)|(?:<<))(.+)
@@ -201,7 +210,7 @@ namespace TestFSM {
             StringCollection tmp = new StringCollection();
             // what happens in here ....  replace spaces but not inside ""
             foreach ( string s in bodyText) {
-                tmp.Add( ReplaceSpacesOutsideStrings(s));
+                tmp.Add( DealWithSpaces(s));
             }
             // then make the string collection into a single string
             // so we can split it
@@ -228,10 +237,10 @@ namespace TestFSM {
             // them match them with the States we have
             // and any left over, create new States
 
-            AddTransitionsFromArray(transitions);
+            AddTransitionsFromArray( theSTT, transitions);
         }
 
-        private static void AddTransitionsFromArray(string[] transitions) {
+        private static void AddTransitionsFromArray(FSM_STT theSTT , string[] transitions) {
             //
 
             List<INNER_TRANS> iTransList = new List<INNER_TRANS>(transitions.Length);
@@ -241,7 +250,7 @@ namespace TestFSM {
                 // pick out the parts to the left and right 
                 // the rightmost part after the ':' is the event name
                 iTransList.Add(new INNER_TRANS());
-                iTransList[count].parseTransitionString( s);
+                iTransList[count].parseTransitionString(theSTT, s);
                 count++;
             }
         }
@@ -271,7 +280,7 @@ namespace TestFSM {
 
                     if( annotations !="" ) {
 
-                        // it might have a split on \r\n then use onEntry()/:entry():onEntry:entry
+                        // it might have a split on \r\n then use onEntry()/ entry() onEntry entry
                         // and so on....   maybe this is a regex job. ?
                         // these ought to pull out all the options for onEntry onExit etc.
                         // (?:on)?[Ee]ntry(?:\(\))?[\/\\: ](.*)
@@ -281,12 +290,12 @@ namespace TestFSM {
                         match = Regex.Match(annotations, @"(?:on)?[Ee]ntry(?:\(\))?[\/\\: ](.*)");
                         string onEntryAnn = match.Groups[1].Value.Trim();
                         if( onEntryAnn != "" && onEntryAnn != null) {
-                            state.setOnEntryAnnotation("// implement onEntry() action hint: " + onEntryAnn);
+                            state.setOnEntryAnnotation( onEntryAnn);
                         }
                         match = Regex.Match(annotations, @"(?:on)?[Ee]xit(?:\(\))?[\/\\: ](.*)");
                         string onExitAnn = match.Groups[1].Value.Trim();
                         if(onExitAnn != "" && onExitAnn != null) {
-                            state.setOnExitAnnotation("// implement onExit() action hint: " + onExitAnn);
+                            state.setOnExitAnnotation( onExitAnn);
                         }
 
                     }
@@ -295,7 +304,9 @@ namespace TestFSM {
             }
         }
 
-        private static string ReplaceSpacesOutsideStrings(string s) {
+        private static string DealWithSpaces(string s) {
+
+            // removes spaces outside quotes, replaces with underscores inside
             
             StringBuilder newValue = new StringBuilder("");
             string[] sets = s.Split('\"');
@@ -305,7 +316,8 @@ namespace TestFSM {
                     newValue.Append(sets[i].Replace(" ", ""));
                 else
                     // and the odd ones are in quotes
-                    newValue.Append("\"" + sets[i] + "\"");
+                    newValue.Append("\"" + sets[i].Replace(" ", "_") + "\"");
+                ;
             }
 
             // final " ?
@@ -325,8 +337,6 @@ namespace TestFSM {
                 }
             }
         }
-
-        
          
     }
 }
