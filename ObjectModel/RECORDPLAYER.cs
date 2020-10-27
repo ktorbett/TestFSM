@@ -15,20 +15,19 @@ namespace TestFSM.ObjectModel {
         public class States {
             public const string Player_Off = "Player_Off";
             public const string Stopped = "Stopped";
-            public const string IsItDone = "IsItDone";
             public const string Playing = "Playing";
             public const string Paused = "Paused";
-            public const string initial = "initial";
+            public const string CHOOSE_IsItDone = "CHOOSE_IsItDone";
         }
 
         // Typedef for Event Name strings
 
         public class Events {
+            public const string powerOn = "powerOn";
             public const string play = "play";
+            public const string powerOff = "powerOff";
             public const string stop = "stop";
             public const string pause = "pause";
-            public const string powerOn = "powerOn";
-            public const string powerOff = "powerOff";
             public const string yes = "yes";
             public const string no = "no";
         }
@@ -138,46 +137,6 @@ namespace TestFSM.ObjectModel {
         }
 
 
-        // Implementation of State IsItDone
-
-        // Method for Entry 
-
-        public void IsItDone__onEntry(FSM_Event evt) {
-            Debug.WriteLine("RECORDPLAYER.IsItDone__onEntry() Executing in response to event " + evt.getEventName());
-        }
-
-        // Method for Exit 
-
-        public void IsItDone__onExit(FSM_Event evt) {
-            Debug.WriteLine("RECORDPLAYER.IsItDone__onExit() Executing in response to event " + evt.getEventName());
-        }
-
-        // Method for Transition IsItDone__yes__Player_Off
-
-        public void IsItDone__yes(FSM_Event evt) {
-            Debug.WriteLine("RECORDPLAYER.IsItDone__yes() Executing in response to event " + evt.getEventName());
-        }
-
-        // GuardMethod for transition IsItDone__yes__Player_Off
-
-        public bool IsItDone__yesGuard(FSM_Event evt) {
-            Debug.WriteLine("RECORDPLAYER.IsItDone__yesGuard() allowing event " + evt.getEventName());
-            return true;
-        }
-        // Method for Transition IsItDone__no__Stopped
-
-        public void IsItDone__no(FSM_Event evt) {
-            Debug.WriteLine("RECORDPLAYER.IsItDone__no() Executing in response to event " + evt.getEventName());
-        }
-
-        // GuardMethod for transition IsItDone__no__Stopped
-
-        public bool IsItDone__noGuard(FSM_Event evt) {
-            Debug.WriteLine("RECORDPLAYER.IsItDone__noGuard() allowing event " + evt.getEventName());
-            return true;
-        }
-
-
         // Implementation of State Playing
 
         // Method for Entry 
@@ -276,13 +235,13 @@ namespace TestFSM.ObjectModel {
             Debug.WriteLine("RECORDPLAYER.Paused__stopGuard() allowing event " + evt.getEventName());
             return true;
         }
-        // Method for Transition Paused__powerOff__IsItDone
+        // Method for Transition Paused__powerOff__CHOOSE_IsItDone
 
         public void Paused__powerOff(FSM_Event evt) {
             Debug.WriteLine("RECORDPLAYER.Paused__powerOff() Executing in response to event " + evt.getEventName());
         }
 
-        // GuardMethod for transition Paused__powerOff__IsItDone
+        // GuardMethod for transition Paused__powerOff__CHOOSE_IsItDone
 
         public bool Paused__powerOffGuard(FSM_Event evt) {
             Debug.WriteLine("RECORDPLAYER.Paused__powerOffGuard() allowing event " + evt.getEventName());
@@ -290,12 +249,43 @@ namespace TestFSM.ObjectModel {
         }
 
 
-        // Implementation of State initial
+        // Implementation of State CHOOSE_IsItDone
 
         // Method for Entry 
 
-        public void initial__onEntry(FSM_Event evt) {
-            Debug.WriteLine("RECORDPLAYER.initial__onEntry() Executing in response to event " + evt.getEventName());
+        public void CHOOSE_IsItDone__onEntry(FSM_Event evt) {
+            Debug.WriteLine("RECORDPLAYER.CHOOSE_IsItDone__onEntry() Executing in response to event " + evt.getEventName());
+        }
+
+        // Method for Exit 
+
+        public void CHOOSE_IsItDone__onExit(FSM_Event evt) {
+            Debug.WriteLine("RECORDPLAYER.CHOOSE_IsItDone__onExit() Executing in response to event " + evt.getEventName());
+        }
+
+        // Method for Transition CHOOSE_IsItDone__yes__Player_Off
+
+        public void CHOOSE_IsItDone__yes(FSM_Event evt) {
+            Debug.WriteLine("RECORDPLAYER.CHOOSE_IsItDone__yes() Executing in response to event " + evt.getEventName());
+        }
+
+        // GuardMethod for transition CHOOSE_IsItDone__yes__Player_Off
+
+        public bool CHOOSE_IsItDone__yesGuard(FSM_Event evt) {
+            Debug.WriteLine("RECORDPLAYER.CHOOSE_IsItDone__yesGuard() allowing event " + evt.getEventName());
+            return true;
+        }
+        // Method for Transition CHOOSE_IsItDone__no__Stopped
+
+        public void CHOOSE_IsItDone__no(FSM_Event evt) {
+            Debug.WriteLine("RECORDPLAYER.CHOOSE_IsItDone__no() Executing in response to event " + evt.getEventName());
+        }
+
+        // GuardMethod for transition CHOOSE_IsItDone__no__Stopped
+
+        public bool CHOOSE_IsItDone__noGuard(FSM_Event evt) {
+            Debug.WriteLine("RECORDPLAYER.CHOOSE_IsItDone__noGuard() allowing event " + evt.getEventName());
+            return true;
         }
 
     }
